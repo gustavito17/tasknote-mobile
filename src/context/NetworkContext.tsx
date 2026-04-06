@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import * as Network from 'expo-network';
 import { SyncStatus } from '../types';
 
 interface NetworkContextType extends SyncStatus {
@@ -14,11 +14,15 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
   const [pendingChanges, setPendingChanges] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+    const checkNetwork = async () => {
+      const state = await Network.getNetworkStateAsync();
       setIsOnline(state.isConnected ?? false);
-    });
+    };
 
-    return () => unsubscribe();
+    checkNetwork();
+    const interval = setInterval(checkNetwork, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const value: NetworkContextType = {

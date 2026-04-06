@@ -2,10 +2,10 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
-const STORAGE_TOKEN_KEY = '@TaskNote:authToken';
+const STORAGE_TOKEN_KEY = 'TaskNote.authToken';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || 
-  process.env.API_BASE_URL || 
+  process.env.EXPO_PUBLIC_API_URL || 
   'https://tasknote-api.onrender.com/api';
 
 class ApiClient {

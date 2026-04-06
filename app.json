@@ -3,36 +3,32 @@
     "name": "TaskNote",
     "slug": "tasknote-mobile",
     "version": "1.0.0",
+    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.tasknote.app"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.tasknote.app"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-asset"
     ],
     "extra": {
+      "apiUrl": "https://tasknote-api.onrender.com/api",
       "eas": {
         "projectId": "your-project-id"
       }
+    },
+    "android": {
+      "package": "com.anonymous.tasknotemobile"
+    },
+    "ios": {
+      "bundleIdentifier": "com.anonymous.tasknotemobile"
     }
   }
 }
