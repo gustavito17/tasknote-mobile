@@ -1,105 +1,174 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import {
+  View, Text, StyleSheet, SectionList, Switch,
+  TouchableOpacity, RefreshControl,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TaskCard, Loading, EmptyState, OfflineBanner } from '../components';
 import { useTasks } from '../context';
 import { Task } from '../types';
+import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
+import storage, { TaskCategory } from '../storage';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
 };
 
-type FilterType = 'all' | 'pending' | 'completed';
+type CategoryFilter = 'todas' | TaskCategory;
+
+const CATEGORIES: { key: CategoryFilter; label: string }[] = [
+  { key: 'todas', label: 'Todas' },
+  { key: 'trabajo', label: 'Trabajo' },
+  { key: 'personal', label: 'Personal' },
+  { key: 'urgente', label: 'Urgente' },
+];
+
+const CATEGORY_ACCENT: Record<string, string> = {
+  trabajo: '#4FC3F7',
+  personal: '#CE93D8',
+  urgente: '#EF9A9A',
+};
+
+const isToday = (dateStr: string) =>
+  new Date(dateStr).toDateString() === new Date().toDateString();
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { tasks, isLoading, fetchTasks, updateTaskStatus } = useTasks();
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('todas');
+  const [scrollEnabled, setScrollEnabled] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [categoryMap, setCategoryMap] = useState<Record<number, TaskCategory>>({});
 
   useFocusEffect(
     useCallback(() => {
-      fetchTasks(filter === 'all' ? undefined : { status: filter });
-    }, [filter, fetchTasks])
+      fetchTasks({ limit: 100 } as any);
+      storage.getTaskCategories().then(setCategoryMap);
+    }, [fetchTasks])
   );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchTasks(filter === 'all' ? undefined : { status: filter });
+    await fetchTasks({ limit: 100 } as any);
+    const map = await storage.getTaskCategories();
+    setCategoryMap(map);
     setRefreshing(false);
-  }, [filter]);
+  }, [fetchTasks]);
 
   const handleToggleStatus = useCallback((task: Task) => {
-    const newStatus = task.status === 'pending' ? 'completed' : 'pending';
-    updateTaskStatus(task.id, newStatus);
-  }, []);
+    updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');
+  }, [updateTaskStatus]);
 
   const handleTaskPress = useCallback((task: Task) => {
     navigation.navigate('TaskDetail', { taskId: task.id });
   }, [navigation]);
 
-  const handleCreateTask = useCallback(() => {
-    navigation.navigate('CreateTask');
-  }, [navigation]);
+  // Apply category filter locally
+  const filteredTasks = tasks.filter((t) => {
+    if (categoryFilter === 'todas') return true;
+    return categoryMap[t.id] === categoryFilter;
+  });
 
-  const renderTask = useCallback(({ item }: { item: Task }) => (
-    <TaskCard
-      task={item}
-      onPress={() => handleTaskPress(item)}
-      onToggleStatus={() => handleToggleStatus(item)}
-    />
-  ), []);
+  // Split into sections
+  const todayTasks = filteredTasks.filter((t) => isToday(t.createdAt));
+  const olderTasks = filteredTasks.filter((t) => !isToday(t.createdAt));
 
-  const FilterButton = ({ type, label }: { type: FilterType; label: string }) => (
-    <TouchableOpacity
-      style={[styles.filterButton, filter === type && styles.filterButtonActive]}
-      onPress={() => setFilter(type)}
-    >
-      <Text style={[styles.filterText, filter === type && styles.filterTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+  const sections = [
+    ...(todayTasks.length > 0 ? [{ title: 'Tareas de hoy', data: todayTasks }] : []),
+    ...(olderTasks.length > 0 ? [{ title: 'Anteriores', data: olderTasks }] : []),
+  ];
 
-  if (isLoading && tasks.length === 0) {
+  if (isLoading === 'loading' && tasks.length === 0) {
     return <Loading message="Cargando tareas..." />;
   }
 
   return (
     <View style={styles.container}>
       <OfflineBanner />
-      
+
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Mis Tareas</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleCreateTask}>
+        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('CreateTask')}>
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.filters}>
-        <FilterButton type="all" label="Todas" />
-        <FilterButton type="pending" label="Pendientes" />
-        <FilterButton type="completed" label="Completadas" />
+      {/* Scroll toggle */}
+      <View style={styles.scrollToggleRow}>
+        <Text style={styles.scrollToggleLabel}>Scroll</Text>
+        <Switch
+          value={scrollEnabled}
+          onValueChange={setScrollEnabled}
+          trackColor={{ false: Colors.divider, true: Colors.secondary + '66' }}
+          thumbColor={scrollEnabled ? Colors.secondary : Colors.textMuted}
+        />
+        <Text style={styles.scrollToggleValue}>{scrollEnabled ? 'Activo' : 'Inactivo'}</Text>
       </View>
 
-      {tasks.length === 0 ? (
+      {/* Category pills */}
+      <View style={styles.categoryRow}>
+        {CATEGORIES.map(({ key, label }) => {
+          const isActive = categoryFilter === key;
+          const accent = key !== 'todas' ? CATEGORY_ACCENT[key] : Colors.secondary;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.categoryPill,
+                isActive && { backgroundColor: accent + '33', borderColor: accent },
+              ]}
+              onPress={() => setCategoryFilter(key)}
+            >
+              <Text style={[styles.categoryPillText, isActive && { color: accent }]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Task list */}
+      {filteredTasks.length === 0 ? (
         <EmptyState
-          title="No hay tareas"
-          message={filter === 'all' 
-            ? "Crea tu primera tarea para comenzar" 
-            : `No tienes tareas ${filter === 'pending' ? 'pendientes' : 'completadas'}`}
+          title="Sin tareas"
+          message={
+            categoryFilter === 'todas'
+              ? 'Crea tu primera tarea'
+              : `No hay tareas en "${categoryFilter}"`
+          }
           actionLabel="Crear Tarea"
-          onAction={handleCreateTask}
+          onAction={() => navigation.navigate('CreateTask')}
         />
       ) : (
-        <FlatList
-          data={tasks}
-          renderItem={renderTask}
+        <SectionList
+          sections={sections}
+          scrollEnabled={scrollEnabled}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <TaskCard
+              task={item}
+              onPress={() => handleTaskPress(item)}
+              onToggleStatus={() => handleToggleStatus(item)}
+              category={categoryMap[item.id]}
+            />
+          )}
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionDivider} />
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <View style={styles.sectionDivider} />
+            </View>
+          )}
+          contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.secondary}
+            />
           }
+          stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -110,60 +179,92 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.textPrimary,
+    letterSpacing: 0.5,
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
+    width: 38,
+    height: 38,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: Colors.primary,
     fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 26,
+    fontFamily: FontFamily.headingBold,
+    lineHeight: 27,
   },
-  filters: {
+  scrollToggleRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
+    gap: Spacing.sm,
   },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#E5E5EA',
+  scrollToggleLabel: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
+    color: Colors.textMuted,
   },
-  filterButtonActive: {
-    backgroundColor: '#007AFF',
+  scrollToggleValue: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
+    color: Colors.textMuted,
   },
-  filterText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+  categoryRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
   },
-  filterTextActive: {
-    color: '#fff',
+  categoryPill: {
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.divider,
   },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  categoryPillText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  sectionDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+  },
+  sectionTitle: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  listContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
 });

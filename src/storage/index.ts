@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Note, User } from '../types';
 
+export type TaskCategory = 'trabajo' | 'personal' | 'urgente';
+
 const STORAGE_KEYS = {
   USER: '@TaskNote:user',
   TASKS: '@TaskNote:tasks',
@@ -8,6 +10,7 @@ const STORAGE_KEYS = {
   PENDING_TASKS: '@TaskNote:pendingTasks',
   PENDING_NOTES: '@TaskNote:pendingNotes',
   LAST_SYNC: '@TaskNote:lastSync',
+  TASK_CATEGORIES: '@GusPad:taskCategories',
 };
 
 export const storage = {
@@ -139,6 +142,30 @@ export const storage = {
     } catch (error) {
       console.error('[Storage] Error reading last sync:', error);
       return null;
+    }
+  },
+
+  async setTaskCategory(taskId: number, category: TaskCategory | null): Promise<void> {
+    try {
+      const map = await this.getTaskCategories();
+      if (category === null) {
+        delete map[taskId];
+      } else {
+        map[taskId] = category;
+      }
+      await AsyncStorage.setItem(STORAGE_KEYS.TASK_CATEGORIES, JSON.stringify(map));
+    } catch (error) {
+      console.error('[Storage] Error saving task category:', error);
+    }
+  },
+
+  async getTaskCategories(): Promise<Record<number, TaskCategory>> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.TASK_CATEGORIES);
+      return data ? JSON.parse(data) : {};
+    } catch (error) {
+      console.error('[Storage] Error reading task categories:', error);
+      return {};
     }
   },
 

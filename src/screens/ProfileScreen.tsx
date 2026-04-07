@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '../context';
+import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 
 export function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -9,33 +10,50 @@ export function ProfileScreen() {
     logout();
   }, [logout]);
 
+  const initials = user?.username?.charAt(0).toUpperCase() || '?';
+
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('es', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : '—';
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+      {/* Avatar */}
+      <View style={styles.avatarWrapper}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.username?.charAt(0).toUpperCase() || '?'}
-          </Text>
+          <Text style={styles.avatarText}>{initials}</Text>
         </View>
-        
-        <Text style={styles.username}>{user?.username}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-
-        <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Miembro desde</Text>
-            <Text style={styles.infoValue}>
-              {user?.createdAt 
-                ? new Date(user.createdAt).toLocaleDateString() 
-                : '-'}
-            </Text>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
       </View>
+
+      <Text style={styles.username}>{user?.username}</Text>
+      <Text style={styles.email}>{user?.email}</Text>
+
+      {/* Info card */}
+      <View style={styles.card}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Nombre de usuario</Text>
+          <Text style={styles.infoValue}>{user?.username}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Correo</Text>
+          <Text style={styles.infoValue} numberOfLines={1}>{user?.email}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Miembro desde</Text>
+          <Text style={styles.infoValue}>{memberSince}</Text>
+        </View>
+      </View>
+
+      {/* Logout */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 }
@@ -43,68 +61,93 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.background,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xxl,
     alignItems: 'center',
+  },
+  avatarWrapper: {
+    padding: 3,
+    borderRadius: Radius.full,
+    borderWidth: 2,
+    borderColor: Colors.secondary,
+    marginBottom: Spacing.md,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#007AFF',
+    width: 88,
+    height: 88,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   avatarText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 38,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.secondary,
   },
   username: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.textPrimary,
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   email: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 32,
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xl,
   },
-  infoSection: {
+  card: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 32,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.divider,
+    marginBottom: Spacing.xl,
+    overflow: 'hidden',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
   },
   infoLabel: {
-    fontSize: 16,
-    color: '#3C3C43',
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
   },
   infoValue: {
-    fontSize: 16,
-    color: '#8E8E93',
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
+    color: Colors.textPrimary,
+    maxWidth: '55%',
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.divider,
+    marginHorizontal: Spacing.md,
   },
   logoutButton: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: Colors.error + '66',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   logoutText: {
-    color: '#FF3B30',
-    fontSize: 16,
-    fontWeight: '600',
+    color: Colors.error,
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.headingSemiBold,
+    letterSpacing: 0.3,
   },
 });
