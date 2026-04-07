@@ -1,11 +1,10 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TaskCard, Loading, EmptyState, OfflineBanner } from '../components';
 import { useTasks } from '../context';
 import { Task } from '../types';
-import { useNetwork } from '../context';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -14,20 +13,15 @@ type HomeScreenProps = {
 type FilterType = 'all' | 'pending' | 'completed';
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
-  const { tasks, isLoading, fetchTasks, updateTaskStatus, deleteTask } = useTasks();
-  const { isConnected } = useNetwork();
+  const { tasks, isLoading, fetchTasks, updateTaskStatus } = useTasks();
   const [filter, setFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      fetchTasks();
-    }, [])
+      fetchTasks(filter === 'all' ? undefined : { status: filter });
+    }, [filter, fetchTasks])
   );
-
-  useEffect(() => {
-    fetchTasks(filter === 'all' ? undefined : { status: filter });
-  }, [filter]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
