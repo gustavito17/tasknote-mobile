@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Button } from '../components';
+import { Input } from '../components';
+import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 
 interface LoginScreenProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (credentials: { email: string; password: string }) => Promise<void>;
   onNavigateToRegister: () => void;
   isLoading: boolean;
   error: string | null;
@@ -15,7 +17,7 @@ export function LoginScreen({ onLogin, onNavigateToRegister, isLoading, error }:
 
   const handleSubmit = () => {
     if (email && password) {
-      onLogin(email, password);
+      onLogin({ email, password });
     }
   };
 
@@ -24,48 +26,55 @@ export function LoginScreen({ onLogin, onNavigateToRegister, isLoading, error }:
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>📝</Text>
-          <Text style={styles.title}>TaskNote</Text>
-          <Text style={styles.subtitle}>Gestiona tus tareas y notas</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>G</Text>
+            </View>
+            <Text style={styles.title}>GusPad</Text>
+            <Text style={styles.subtitle}>Gestiona tus tareas y notas</Text>
+          </View>
+
+          <View style={styles.form}>
+            <Input
+              label="Correo electrónico"
+              placeholder="Ingrese su correo"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Input
+              label="Contraseña"
+              placeholder="Ingrese su contraseña"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Button
+              title="Iniciar Sesión"
+              onPress={handleSubmit}
+              loading={isLoading}
+              disabled={!email || !password}
+              style={styles.submitButton}
+            />
+
+            <Button
+              title="Crear Cuenta"
+              onPress={onNavigateToRegister}
+              variant="secondary"
+            />
+          </View>
         </View>
-
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Contraseña"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Button
-            title="Iniciar Sesión"
-            onPress={handleSubmit}
-            loading={isLoading}
-            disabled={!email || !password}
-          />
-
-          <Button
-            title="Crear Cuenta"
-            onPress={onNavigateToRegister}
-            variant="secondary"
-            style={styles.registerButton}
-          />
-        </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -73,50 +82,59 @@ export function LoginScreen({ onLogin, onNavigateToRegister, isLoading, error }:
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.lg,
     justifyContent: 'center',
+    paddingVertical: Spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: Spacing.xxl,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: 16,
+  logoContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  logoText: {
+    fontSize: 38,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.primary,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
+    fontSize: FontSize.xxl,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.body,
+    color: Colors.textMuted,
   },
   form: {
-    gap: 16,
+    gap: Spacing.sm,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+  submitButton: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   error: {
-    color: '#FF3B30',
-    fontSize: 14,
+    color: Colors.error,
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  registerButton: {
-    marginTop: 8,
+    marginBottom: Spacing.xs,
   },
 });
