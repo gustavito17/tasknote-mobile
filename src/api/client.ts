@@ -15,7 +15,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 10000,
+      timeout: 60000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -97,6 +97,14 @@ class ApiClient {
       }
     }
     return this.token;
+  }
+
+  async warmUp(): Promise<void> {
+    try {
+      await this.client.get('/auth/me', { timeout: 60000 });
+    } catch {
+      // Expected to fail (no token) — we only care about waking the server
+    }
   }
 
   get instance(): AxiosInstance {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,8 +12,13 @@ import {
 import { AuthProvider, TaskProvider, NoteProvider, NetworkProvider } from './context';
 import { AppNavigator } from './navigation';
 import { Colors } from './theme';
+import { apiClient } from './api';
 
 export default function App() {
+  useEffect(() => {
+    apiClient.warmUp();
+  }, []);
+
   const [fontsLoaded] = useFonts({
     // League Spartan — via @expo-google-fonts/league-spartan
     LeagueSpartan_400Regular,
