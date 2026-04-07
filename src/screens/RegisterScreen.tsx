@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Button } from '../components';
+import { Input } from '../components';
+import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 
 interface RegisterScreenProps {
-  onRegister: (username: string, email: string, password: string) => Promise<void>;
+  onRegister: (credentials: { username: string; email: string; password: string }) => Promise<void>;
   onNavigateToLogin: () => void;
   isLoading: boolean;
   error: string | null;
@@ -17,7 +19,7 @@ export function RegisterScreen({ onRegister, onNavigateToLogin, isLoading, error
 
   const handleSubmit = () => {
     if (username && email && password && password === confirmPassword) {
-      onRegister(username, email, password);
+      onRegister({ username, email, password });
     }
   };
 
@@ -28,64 +30,67 @@ export function RegisterScreen({ onRegister, onNavigateToLogin, isLoading, error
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.logo}>📝</Text>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>G</Text>
+            </View>
             <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.subtitle}>Únete a TaskNote</Text>
+            <Text style={styles.subtitle}>Únete a GusPad</Text>
           </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre de usuario"
+            <Input
+              label="Nombre de usuario"
+              placeholder="Ingrese su nombre"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
+            <Input
+              label="Correo electrónico"
+              placeholder="Ingrese su correo"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Contraseña"
+            <Input
+              label="Contraseña"
+              placeholder="Ingrese su contraseña"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
-            <TextInput
-              style={[styles.input, !passwordsMatch && styles.inputError]}
-              placeholder="Confirmar contraseña"
+            <Input
+              label="Confirmar contraseña"
+              placeholder="Repita su contraseña"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
+              error={!passwordsMatch ? 'Las contraseñas no coinciden' : undefined}
             />
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
-            {!passwordsMatch ? (
-              <Text style={styles.error}>Las contraseñas no coinciden</Text>
-            ) : null}
 
             <Button
               title="Registrarse"
               onPress={handleSubmit}
               loading={isLoading}
               disabled={!username || !email || !password || !passwordsMatch}
+              style={styles.submitButton}
             />
 
             <Button
               title="Ya tengo cuenta"
               onPress={onNavigateToLogin}
               variant="secondary"
-              style={styles.loginButton}
             />
           </View>
         </View>
@@ -97,57 +102,59 @@ export function RegisterScreen({ onRegister, onNavigateToLogin, isLoading, error
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.background,
   },
   scrollContent: {
     flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.lg,
     justifyContent: 'center',
-    paddingVertical: 48,
+    paddingVertical: Spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: Spacing.xl,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: 16,
+  logoContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  logoText: {
+    fontSize: 38,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.primary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.body,
+    color: Colors.textMuted,
   },
   form: {
-    gap: 16,
+    gap: Spacing.xs,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  inputError: {
-    borderColor: '#FF3B30',
+  submitButton: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   error: {
-    color: '#FF3B30',
-    fontSize: 14,
+    color: Colors.error,
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  loginButton: {
-    marginTop: 8,
+    marginBottom: Spacing.xs,
   },
 });
