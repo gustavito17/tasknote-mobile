@@ -8,7 +8,6 @@ import { Button } from '../components';
 import { useTasks } from '../context';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 import storage from '../storage';
-import type { UserCategory } from '../storage';
 
 type CreateTaskScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -42,13 +41,12 @@ function isBeforeToday(d: Date) {
 
 export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const { createTask } = useTasks();
+  const categoryId = route?.params?.categoryId ?? null;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    route?.params?.categoryId ?? null
-  );
-  const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
+  const [folderLabel, setFolderLabel] = useState<string | null>(null);
+  const [folderColor, setFolderColor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -61,8 +59,13 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - 2 + i);
 
   useEffect(() => {
-    storage.getUserCategories().then(setUserCategories);
-  }, []);
+    if (categoryId) {
+      storage.getUserCategories().then((cats) => {
+        const cat = cats.find((c) => c.id === categoryId);
+        if (cat) { setFolderLabel(cat.label); setFolderColor(cat.color); }
+      });
+    }
+  }, [categoryId]);
 
   const selectToday = useCallback(() => {
     setScheduledDate(new Date());
@@ -97,7 +100,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
       const dateLine = scheduledDate ? `📅 ${formatDisplayDate(scheduledDate)}\n` : '';
       const fullDescription = (dateLine + description.trim()) || undefined;
       const task = await createTask({ title: title.trim(), description: fullDescription });
-      if (selectedCategory) await storage.setTaskCategory(task.id, selectedCategory);
+      if (categoryId) await storage.setTaskCategory(task.id, categoryId);
       navigation.goBack();
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Error al crear la tarea');
@@ -110,6 +113,24 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+
+      {/* Header custom — igual a FolderDetailScreen */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          {folderColor && <View style={[styles.headerDot, { backgroundColor: folderColor }]} />}
+          <Text style={styles.headerTitle}>Nueva Tarea</Text>
+        </View>
+        {/* Carpeta identificada automáticamente */}
+        {folderLabel && folderColor && (
+          <View style={[styles.folderBadge, { backgroundColor: folderColor + '25', borderColor: folderColor + '60' }]}>
+            <Text style={[styles.folderBadgeText, { color: folderColor }]}>{folderLabel}</Text>
+          </View>
+        )}
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
 
@@ -182,28 +203,6 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
             <View style={styles.datePreview}>
               <Text style={styles.datePreviewText}>{formatDisplayDate(scheduledDate)}</Text>
             </View>
-          )}
-
-          {/* Category */}
-          {userCategories.length > 0 && (
-            <>
-              <Text style={styles.label}>Carpeta</Text>
-              <View style={styles.pillRow}>
-                {userCategories.map((cat) => {
-                  const active = selectedCategory === cat.id;
-                  return (
-                    <TouchableOpacity
-                      key={cat.id}
-                      style={[styles.pill, active && { backgroundColor: cat.color + '30', borderColor: cat.color }]}
-                      onPress={() => setSelectedCategory(active ? null : cat.id)}
-                    >
-                      <View style={[styles.catDot, { backgroundColor: cat.color }]} />
-                      <Text style={[styles.pillText, active && { color: cat.color }]}>{cat.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
           )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -336,8 +335,31 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+
+  // Header — mismo patrón que FolderDetailScreen
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.md, paddingTop: Spacing.xxl, paddingBottom: Spacing.md,
+  },
+  backBtn: {
+    width: 36, height: 36, borderRadius: Radius.full,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.xs,
+  },
+  backText: {
+    fontSize: 22, color: Colors.secondary, fontFamily: FontFamily.headingBold,
+    includeFontPadding: false, textAlignVertical: 'center',
+  },
+  headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerDot: { width: 10, height: 10, borderRadius: 5 },
+  headerTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
+  folderBadge: {
+    paddingHorizontal: Spacing.sm, paddingVertical: 4,
+    borderRadius: Radius.full, borderWidth: 1,
+  },
+  folderBadgeText: { fontSize: FontSize.xs, fontFamily: FontFamily.headingSemiBold },
+
   scroll: { flexGrow: 1 },
-  content: { padding: Spacing.lg },
+  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
   label: {
     fontSize: FontSize.xs, fontFamily: FontFamily.headingSemiBold,
     color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase',
@@ -378,16 +400,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 6,
   },
   datePreviewText: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.secondary },
-
-  // Category pills
-  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
-  pill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: Spacing.sm + 4, paddingVertical: 7,
-    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.divider,
-  },
-  pillText: { fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.textMuted },
-  catDot: { width: 7, height: 7, borderRadius: 4 },
 
   error: {
     color: Colors.error, fontSize: FontSize.sm, fontFamily: FontFamily.body,

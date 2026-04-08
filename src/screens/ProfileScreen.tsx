@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brand: {
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xl,
     fontFamily: FontFamily.headingBold,
     color: Colors.textPrimary,
     letterSpacing: 1,

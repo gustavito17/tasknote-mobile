@@ -69,14 +69,7 @@ function HomeStackNavigator() {
       <HomeStack.Screen
         name="CreateTask"
         component={CreateTaskScreen}
-        options={{
-          headerShown: true,
-          title: 'Nueva Tarea',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.secondary,
-          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
-          headerShadowVisible: false,
-        }}
+        options={{ headerShown: false }}
       />
     </HomeStack.Navigator>
   );
