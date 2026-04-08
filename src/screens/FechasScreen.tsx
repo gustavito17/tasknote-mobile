@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SectionList, RefreshControl,
-  TouchableOpacity, Modal, ScrollView,
+  TouchableOpacity, Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Loading } from '../components';
@@ -199,12 +199,8 @@ export function FechasScreen() {
         )}
       </View>
 
-      {/* Filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
+      {/* Filter chips — igual ancho, centrados */}
+      <View style={styles.filterRow}>
         <TouchableOpacity
           style={[styles.chip, !filterDate && styles.chipActive]}
           onPress={clearFilter}
@@ -227,22 +223,16 @@ export function FechasScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.chip,
-            filterDate && !isTodayFilter && !isTmrwFilter && styles.chipActive,
-          ]}
+          style={[styles.chip, filterDate && !isTodayFilter && !isTmrwFilter && styles.chipActive]}
           onPress={() => setShowCalendar(true)}
         >
-          <Text style={[
-            styles.chipText,
-            filterDate && !isTodayFilter && !isTmrwFilter && styles.chipTextActive,
-          ]}>
-            📅 {filterDate && !isTodayFilter && !isTmrwFilter
+          <Text style={[styles.chipText, filterDate && !isTodayFilter && !isTmrwFilter && styles.chipTextActive]}>
+            {filterDate && !isTodayFilter && !isTmrwFilter
               ? filterDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })
-              : 'Elegir fecha'}
+              : '📅 Fecha'}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {/* Task list */}
       {sections.length === 0 ? (
@@ -298,38 +288,40 @@ export function FechasScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.calDayNames}>
+            {/* Day names row */}
+            <View style={styles.calRow}>
               {DAY_NAMES.map((d) => (
-                <Text key={d} style={styles.calDayName}>{d}</Text>
+                <View key={d} style={styles.calCell}>
+                  <Text style={styles.calDayName}>{d}</Text>
+                </View>
               ))}
             </View>
 
-            <View style={styles.calGrid}>
-              {calDays.map((day, i) => {
-                if (!day) return <View key={`e-${i}`} style={styles.calCell} />;
-                const selected = filterDate && isSameDay(day, filterDate);
-                const isToday  = isSameDay(day, today);
-                return (
-                  <TouchableOpacity
-                    key={day.toISOString()}
-                    style={[
-                      styles.calCell,
-                      isToday && styles.calCellToday,
-                      selected && styles.calCellSelected,
-                    ]}
-                    onPress={() => handleCalendarDay(day)}
-                  >
-                    <Text style={[
-                      styles.calCellText,
-                      isToday && styles.calCellTodayText,
-                      selected && styles.calCellSelectedText,
-                    ]}>
-                      {day.getDate()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* Day grid — row by row so flex:1 distributes evenly */}
+            {Array.from({ length: Math.ceil(calDays.length / 7) }).map((_, rowIdx) => (
+              <View key={rowIdx} style={styles.calRow}>
+                {calDays.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, ci) => {
+                  if (!day) return <View key={`e-${rowIdx}-${ci}`} style={styles.calCell} />;
+                  const selected = filterDate && isSameDay(day, filterDate);
+                  const isToday  = isSameDay(day, today);
+                  return (
+                    <TouchableOpacity
+                      key={day.toISOString()}
+                      style={[styles.calCell, isToday && styles.calCellToday, selected && styles.calCellSelected]}
+                      onPress={() => handleCalendarDay(day)}
+                    >
+                      <Text style={[
+                        styles.calCellText,
+                        isToday && styles.calCellTodayText,
+                        selected && styles.calCellSelectedText,
+                      ]}>
+                        {day.getDate()}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
 
             <TouchableOpacity style={styles.calClose} onPress={() => setShowCalendar(false)}>
               <Text style={styles.calCloseText}>Cerrar</Text>
@@ -372,13 +364,15 @@ const styles = StyleSheet.create({
   // Filter chips
   filterRow: {
     flexDirection: 'row',
-    gap: Spacing.xs,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+    gap: Spacing.xs,
   },
   chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: Colors.divider,
@@ -392,6 +386,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontFamily: FontFamily.headingSemiBold,
     color: Colors.textMuted,
+    textAlign: 'center',
   },
   chipTextActive: { color: Colors.secondary },
 
@@ -433,6 +428,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  // Calendar row + cell (equal-width, centered)
+  calRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  calCell: {
+    flex: 1,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   // Calendar modal
   calOverlay: {
     flex: 1,
@@ -461,17 +468,13 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.headingBold,
     color: Colors.textPrimary,
   },
-  calDayNames: { flexDirection: 'row', marginBottom: Spacing.xs },
   calDayName: {
-    flex: 1,
-    textAlign: 'center',
     fontSize: FontSize.xs,
     fontFamily: FontFamily.headingSemiBold,
     color: Colors.textMuted,
+    textAlign: 'center',
     letterSpacing: 0.5,
   },
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calCell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   calCellText: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textPrimary },
   calCellToday: { borderWidth: 1, borderColor: Colors.secondary, borderRadius: Radius.full },
   calCellTodayText: { color: Colors.secondary, fontFamily: FontFamily.headingSemiBold },
