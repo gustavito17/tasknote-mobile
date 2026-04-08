@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SectionList, RefreshControl,
-  TouchableOpacity, Modal,
+  TouchableOpacity, Modal, ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Loading } from '../components';
@@ -77,9 +77,12 @@ export function FechasScreen() {
   // Filter state
   const [filterDate, setFilterDate] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [calMode, setCalMode] = useState<'calendar' | 'picker'>('calendar');
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
+
+  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - 2 + i);
 
   const loadData = useCallback(async () => {
     const [map, cats] = await Promise.all([
@@ -276,54 +279,115 @@ export function FechasScreen() {
 
       {/* Calendar modal */}
       <Modal visible={showCalendar} transparent animationType="fade">
-        <TouchableOpacity style={styles.calOverlay} activeOpacity={1} onPress={() => setShowCalendar(false)}>
+        <TouchableOpacity
+          style={styles.calOverlay}
+          activeOpacity={1}
+          onPress={() => { setShowCalendar(false); setCalMode('calendar'); }}
+        >
           <TouchableOpacity style={styles.calSheet} activeOpacity={1}>
+
+            {/* ── Header: flechas + toque en mes/año abre picker ── */}
             <View style={styles.calHeader}>
-              <TouchableOpacity onPress={prevMonth} style={styles.calNavBtn}>
-                <Text style={styles.calNavText}>‹</Text>
+              {calMode === 'calendar' && (
+                <TouchableOpacity onPress={prevMonth} style={styles.calNavBtn}>
+                  <Text style={styles.calNavText}>‹</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.calMonthBtn}
+                onPress={() => setCalMode(m => m === 'picker' ? 'calendar' : 'picker')}
+              >
+                <Text style={styles.calMonthLabel}>{MONTH_NAMES[calMonth]} {calYear}</Text>
+                <Text style={styles.calMonthCaret}>{calMode === 'picker' ? '▲' : '▼'}</Text>
               </TouchableOpacity>
-              <Text style={styles.calMonthLabel}>{MONTH_NAMES[calMonth]} {calYear}</Text>
-              <TouchableOpacity onPress={nextMonth} style={styles.calNavBtn}>
-                <Text style={styles.calNavText}>›</Text>
-              </TouchableOpacity>
+              {calMode === 'calendar' && (
+                <TouchableOpacity onPress={nextMonth} style={styles.calNavBtn}>
+                  <Text style={styles.calNavText}>›</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* Day names row */}
-            <View style={styles.calRow}>
-              {DAY_NAMES.map((d) => (
-                <View key={d} style={styles.calCell}>
-                  <Text style={styles.calDayName}>{d}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Day grid — row by row so flex:1 distributes evenly */}
-            {Array.from({ length: Math.ceil(calDays.length / 7) }).map((_, rowIdx) => (
-              <View key={rowIdx} style={styles.calRow}>
-                {calDays.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, ci) => {
-                  if (!day) return <View key={`e-${rowIdx}-${ci}`} style={styles.calCell} />;
-                  const selected = filterDate && isSameDay(day, filterDate);
-                  const isToday  = isSameDay(day, today);
-                  return (
+            {calMode === 'picker' ? (
+              /* ── Picker de mes y año ── */
+              <>
+                {/* Años: scroll horizontal */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.yearRow}
+                >
+                  {YEARS.map(y => (
                     <TouchableOpacity
-                      key={day.toISOString()}
-                      style={[styles.calCell, isToday && styles.calCellToday, selected && styles.calCellSelected]}
-                      onPress={() => handleCalendarDay(day)}
+                      key={y}
+                      style={[styles.yearChip, calYear === y && styles.yearChipActive]}
+                      onPress={() => setCalYear(y)}
                     >
-                      <Text style={[
-                        styles.calCellText,
-                        isToday && styles.calCellTodayText,
-                        selected && styles.calCellSelectedText,
-                      ]}>
-                        {day.getDate()}
+                      <Text style={[styles.yearChipText, calYear === y && styles.yearChipTextActive]}>
+                        {y}
                       </Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
+                  ))}
+                </ScrollView>
 
-            <TouchableOpacity style={styles.calClose} onPress={() => setShowCalendar(false)}>
+                {/* Meses: cuadrícula 3×4 — al tocar mes vuelve al calendario */}
+                <View style={styles.monthGrid}>
+                  {MONTH_NAMES.map((name, idx) => (
+                    <TouchableOpacity
+                      key={name}
+                      style={[styles.monthChip, calMonth === idx && styles.monthChipActive]}
+                      onPress={() => { setCalMonth(idx); setCalMode('calendar'); }}
+                    >
+                      <Text style={[styles.monthChipText, calMonth === idx && styles.monthChipTextActive]}>
+                        {name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              /* ── Vista de días ── */
+              <>
+                {/* Nombres de día */}
+                <View style={[styles.calRow, styles.calDayNamesRow]}>
+                  {DAY_NAMES.map((d) => (
+                    <View key={d} style={styles.calCell}>
+                      <Text style={styles.calDayName}>{d}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Cuadrícula de días */}
+                {Array.from({ length: Math.ceil(calDays.length / 7) }).map((_, rowIdx) => (
+                  <View key={rowIdx} style={styles.calRow}>
+                    {calDays.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, ci) => {
+                      if (!day) return <View key={`e-${rowIdx}-${ci}`} style={styles.calCell} />;
+                      const selected = filterDate && isSameDay(day, filterDate);
+                      const isToday  = isSameDay(day, today);
+                      return (
+                        <TouchableOpacity
+                          key={day.toISOString()}
+                          style={[styles.calCell, isToday && styles.calCellToday, selected && styles.calCellSelected]}
+                          onPress={() => handleCalendarDay(day)}
+                        >
+                          <Text style={[
+                            styles.calCellText,
+                            isToday && styles.calCellTodayText,
+                            selected && styles.calCellSelectedText,
+                          ]}>
+                            {day.getDate()}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.calClose}
+              onPress={() => { setShowCalendar(false); setCalMode('calendar'); }}
+            >
               <Text style={styles.calCloseText}>Cerrar</Text>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -428,19 +492,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Calendar row + cell (equal-width, centered)
-  calRow: {
-    flexDirection: 'row',
-    marginBottom: 2,
-  },
-  calCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Calendar modal
+  // ── Calendar modal ────────────────────────────────────────────────────────
   calOverlay: {
     flex: 1,
     backgroundColor: Colors.overlay,
@@ -448,40 +500,138 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calSheet: {
-    width: '88%',
+    width: '90%',
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xs,
     borderWidth: 1,
     borderColor: Colors.divider,
   },
+
+  // Header
   calHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  calNavBtn: { padding: Spacing.sm },
-  calNavText: { fontSize: 22, color: Colors.secondary, fontFamily: FontFamily.headingBold },
+  calNavBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  calNavText: { fontSize: 24, color: Colors.secondary, fontFamily: FontFamily.headingBold },
+  calMonthBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: Spacing.xs,
+  },
   calMonthLabel: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.headingBold,
     color: Colors.textPrimary,
   },
+  calMonthCaret: {
+    fontSize: 10,
+    color: Colors.secondary,
+    lineHeight: 16,
+  },
+
+  // Day names + grid rows
+  calDayNamesRow: { marginBottom: 2 },
+  calRow: {
+    flexDirection: 'row',
+  },
+  calCell: {
+    flex: 1,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   calDayName: {
-    fontSize: FontSize.xs,
+    fontSize: 11,
     fontFamily: FontFamily.headingSemiBold,
     color: Colors.textMuted,
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
-  calCellText: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textPrimary },
-  calCellToday: { borderWidth: 1, borderColor: Colors.secondary, borderRadius: Radius.full },
+  calCellText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.body,
+    color: Colors.textPrimary,
+  },
+  calCellToday: {
+    borderWidth: 1.5,
+    borderColor: Colors.secondary,
+    borderRadius: 20,
+    width: 34,
+    height: 34,
+  },
   calCellTodayText: { color: Colors.secondary, fontFamily: FontFamily.headingSemiBold },
-  calCellSelected: { backgroundColor: Colors.secondary, borderRadius: Radius.full },
+  calCellSelected: {
+    backgroundColor: Colors.secondary,
+    borderRadius: 20,
+    width: 34,
+    height: 34,
+  },
   calCellSelectedText: { color: Colors.primary, fontFamily: FontFamily.headingBold },
+
+  // ── Month/year picker ──────────────────────────────────────────────────────
+  yearRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 2,
+  },
+  yearChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.divider,
+    backgroundColor: Colors.background,
+  },
+  yearChipActive: {
+    backgroundColor: Colors.secondary + '22',
+    borderColor: Colors.secondary,
+  },
+  yearChipText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted,
+  },
+  yearChipTextActive: { color: Colors.secondary },
+
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  monthChip: {
+    width: '33.33%',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  monthChipActive: {},
+  monthChipText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  monthChipTextActive: {
+    color: Colors.primary,
+    backgroundColor: Colors.secondary,
+  },
+
+  // Close button
   calClose: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     paddingVertical: Spacing.sm,
     alignItems: 'center',
     borderTopWidth: 1,
