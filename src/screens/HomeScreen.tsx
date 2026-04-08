@@ -1,14 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, Text, StyleSheet, SectionList,
-  TouchableOpacity, RefreshControl, Modal,
-  TextInput, Alert,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  RefreshControl, Modal, TextInput, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { TaskCard, Loading, EmptyState, OfflineBanner } from '../components';
+import { OfflineBanner } from '../components';
 import { useTasks } from '../context';
-import { Task } from '../types';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 import storage from '../storage';
 import type { UserCategory } from '../storage';
@@ -19,21 +17,16 @@ type HomeScreenProps = {
 
 const PALETTE = ['#4FC3F7', '#CE93D8', '#FFCC80', '#80CBC4', '#EF9A9A', '#A5D6A7', '#FFD54F', '#90CAF9'];
 
-function isToday(dateStr: string) {
-  return new Date(dateStr).toDateString() === new Date().toDateString();
-}
-
 export function HomeScreen({ navigation }: HomeScreenProps) {
-  const { tasks, isLoading, fetchTasks, updateTaskStatus } = useTasks();
-  const [categoryFilter, setCategoryFilter] = useState<string>('todas');
-  const [categoryMap, setCategoryMap] = useState<Record<number, string>>({});
+  const { tasks, fetchTasks } = useTasks();
   const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
 
-  // Category manager modal
-  const [showCatModal, setShowCatModal] = useState(false);
-  const [newCatLabel, setNewCatLabel] = useState('');
-  const [newCatColor, setNewCatColor] = useState(PALETTE[0]);
+  // New folder modal
+  const [showModal, setShowModal] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [newColor, setNewColor] = useState(PALETTE[0]);
 
   const loadData = useCallback(async () => {
     fetchTasks({ limit: 100 } as any);
@@ -53,28 +46,20 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     setRefreshing(false);
   }, [loadData]);
 
-  const handleToggleStatus = useCallback((task: Task) => {
-    updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');
-  }, [updateTaskStatus]);
-
-  // ── Category CRUD ───────────────────────────────────────────────────────────
-  const handleAddCategory = useCallback(async () => {
-    const label = newCatLabel.trim();
+  const handleAddFolder = useCallback(async () => {
+    const label = newLabel.trim();
     if (!label) return;
-    const newCat: UserCategory = {
-      id: `cat_${Date.now()}`,
-      label,
-      color: newCatColor,
-    };
+    const newCat: UserCategory = { id: `cat_${Date.now()}`, label, color: newColor };
     const updated = [...userCategories, newCat];
     await storage.setUserCategories(updated);
     setUserCategories(updated);
-    setNewCatLabel('');
-    setNewCatColor(PALETTE[0]);
-  }, [newCatLabel, newCatColor, userCategories]);
+    setNewLabel('');
+    setNewColor(PALETTE[0]);
+    setShowModal(false);
+  }, [newLabel, newColor, userCategories]);
 
-  const handleDeleteCategory = useCallback((catId: string) => {
-    Alert.alert('Eliminar categoría', '¿Estás seguro?', [
+  const handleDeleteFolder = useCallback((catId: string) => {
+    Alert.alert('Eliminar carpeta', '¿Eliminar esta carpeta? Las tareas no se borrarán.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Eliminar', style: 'destructive',
@@ -82,163 +67,121 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           const updated = userCategories.filter((c) => c.id !== catId);
           await storage.setUserCategories(updated);
           setUserCategories(updated);
-          if (categoryFilter === catId) setCategoryFilter('todas');
         },
       },
     ]);
-  }, [userCategories, categoryFilter]);
+  }, [userCategories]);
 
-  // ── Filtered + sectioned tasks ──────────────────────────────────────────────
-  const filtered = tasks.filter((t) => {
-    if (categoryFilter === 'todas') return true;
-    return categoryMap[t.id] === categoryFilter;
-  });
+  // Task counts per category
+  const countForCategory = (catId: string) =>
+    tasks.filter((t) => categoryMap[t.id] === catId).length;
 
-  const todayTasks = filtered.filter((t) => isToday(t.createdAt));
-  const olderTasks = filtered.filter((t) => !isToday(t.createdAt));
+  const pendingForCategory = (catId: string) =>
+    tasks.filter((t) => categoryMap[t.id] === catId && t.status === 'pending').length;
 
-  const sections = [
-    ...(todayTasks.length > 0 ? [{ title: 'Tareas de hoy', data: todayTasks }] : []),
-    ...(olderTasks.length > 0 ? [{ title: 'Anteriores', data: olderTasks }] : []),
+  // Uncategorized tasks
+  const uncategorizedCount = tasks.filter((t) => !categoryMap[t.id]).length;
+  const uncategorizedPending = tasks.filter((t) => !categoryMap[t.id] && t.status === 'pending').length;
+
+  const folders: (UserCategory | { id: '__none__'; label: string; color: string })[] = [
+    ...userCategories,
+    ...(uncategorizedCount > 0
+      ? [{ id: '__none__' as const, label: 'Sin carpeta', color: Colors.textMuted }]
+      : []),
   ];
-
-  const getCategoryById = (id: string) => userCategories.find((c) => c.id === id);
-
-  if (isLoading === 'loading' && tasks.length === 0) {
-    return <Loading message="Cargando tareas..." />;
-  }
 
   return (
     <View style={styles.container}>
       <OfflineBanner />
 
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Mis Tareas</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('CreateTask')}>
-          <Text style={styles.addButtonText}>+</Text>
+        <Text style={styles.title}>GusPad</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
+          <Text style={styles.addBtnText}>+ Carpeta</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Category filter row */}
-      <View style={styles.filterRow}>
-        <TouchableOpacity
-          style={[styles.pill, categoryFilter === 'todas' && styles.pillActive]}
-          onPress={() => setCategoryFilter('todas')}
-        >
-          <Text style={[styles.pillText, categoryFilter === 'todas' && styles.pillTextActive]}>
-            Todas
-          </Text>
-        </TouchableOpacity>
-
-        {userCategories.map((cat) => {
-          const active = categoryFilter === cat.id;
+      <FlatList
+        data={folders}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.secondary} />
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Sin carpetas</Text>
+            <Text style={styles.emptyText}>Toca "+ Carpeta" para crear tu primera carpeta</Text>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const total = item.id === '__none__' ? uncategorizedCount : countForCategory(item.id);
+          const pending = item.id === '__none__' ? uncategorizedPending : pendingForCategory(item.id);
           return (
             <TouchableOpacity
-              key={cat.id}
-              style={[styles.pill, active && { backgroundColor: cat.color + '30', borderColor: cat.color }]}
-              onPress={() => setCategoryFilter(cat.id)}
-              onLongPress={() => handleDeleteCategory(cat.id)}
+              style={styles.folderCard}
+              onPress={() => navigation.navigate('FolderDetail', {
+                categoryId: item.id,
+                categoryLabel: item.label,
+                categoryColor: item.color,
+              })}
+              onLongPress={() => item.id !== '__none__' && handleDeleteFolder(item.id)}
+              activeOpacity={0.75}
             >
-              <View style={[styles.catDot, { backgroundColor: cat.color }]} />
-              <Text style={[styles.pillText, active && { color: cat.color }]}>{cat.label}</Text>
+              <View style={[styles.folderIcon, { backgroundColor: item.color + '25' }]}>
+                <Text style={styles.folderEmoji}>📁</Text>
+              </View>
+              <View style={styles.folderInfo}>
+                <Text style={styles.folderLabel}>{item.label}</Text>
+                <Text style={styles.folderCount}>
+                  {pending} pendiente{pending !== 1 ? 's' : ''} · {total} total
+                </Text>
+              </View>
+              <View style={[styles.folderAccent, { backgroundColor: item.color }]} />
             </TouchableOpacity>
           );
-        })}
+        }}
+      />
 
-        <TouchableOpacity style={styles.pillAdd} onPress={() => setShowCatModal(true)}>
-          <Text style={styles.pillAddText}>+ Carpeta</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Task list */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          title="Sin tareas"
-          message={categoryFilter === 'todas' ? 'Crea tu primera tarea' : 'No hay tareas en esta carpeta'}
-          actionLabel="Crear Tarea"
-          onAction={() => navigation.navigate('CreateTask')}
-        />
-      ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <TaskCard
-              task={item}
-              onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
-              onToggleStatus={() => handleToggleStatus(item)}
-              category={getCategoryById(categoryMap[item.id])}
-            />
-          )}
-          renderSectionHeader={({ section }) => (
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionLine} />
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.sectionLine} />
-            </View>
-          )}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.secondary} />
-          }
-          stickySectionHeadersEnabled={false}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* Category manager modal */}
-      <Modal visible={showCatModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Nueva carpeta</Text>
+      {/* New folder modal */}
+      <Modal visible={showModal} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Nueva carpeta</Text>
 
             <TextInput
-              style={styles.modalInput}
+              style={styles.input}
               placeholder="Nombre de la carpeta"
               placeholderTextColor={Colors.inputPlaceholder}
-              value={newCatLabel}
-              onChangeText={setNewCatLabel}
+              value={newLabel}
+              onChangeText={setNewLabel}
               autoFocus
             />
 
-            <Text style={styles.modalSubtitle}>Color</Text>
-            <View style={styles.paletteRow}>
+            <Text style={styles.sheetLabel}>Color</Text>
+            <View style={styles.palette}>
               {PALETTE.map((color) => (
                 <TouchableOpacity
                   key={color}
-                  style={[styles.paletteCircle, { backgroundColor: color }, newCatColor === color && styles.paletteCircleActive]}
-                  onPress={() => setNewCatColor(color)}
+                  style={[styles.colorCircle, { backgroundColor: color }, newColor === color && styles.colorCircleActive]}
+                  onPress={() => setNewColor(color)}
                 />
               ))}
             </View>
 
-            {/* Existing categories */}
-            {userCategories.length > 0 && (
-              <>
-                <Text style={styles.modalSubtitle}>Carpetas existentes</Text>
-                {userCategories.map((cat) => (
-                  <View key={cat.id} style={styles.catRow}>
-                    <View style={[styles.catRowDot, { backgroundColor: cat.color }]} />
-                    <Text style={styles.catRowLabel}>{cat.label}</Text>
-                    <TouchableOpacity onPress={() => handleDeleteCategory(cat.id)}>
-                      <Text style={styles.catRowDelete}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setShowCatModal(false)}>
-                <Text style={styles.modalBtnSecondaryText}>Cerrar</Text>
+            <View style={styles.sheetButtons}>
+              <TouchableOpacity
+                style={styles.btnSecondary}
+                onPress={() => { setShowModal(false); setNewLabel(''); }}
+              >
+                <Text style={styles.btnSecondaryText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtnPrimary, !newCatLabel.trim() && { opacity: 0.4 }]}
-                onPress={handleAddCategory}
-                disabled={!newCatLabel.trim()}
+                style={[styles.btnPrimary, !newLabel.trim() && { opacity: 0.4 }]}
+                onPress={handleAddFolder}
+                disabled={!newLabel.trim()}
               >
-                <Text style={styles.modalBtnPrimaryText}>Añadir</Text>
+                <Text style={styles.btnPrimaryText}>Crear</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -252,98 +195,68 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.md,
   },
   title: {
     fontSize: FontSize.xl, fontFamily: FontFamily.headingBold,
     color: Colors.textPrimary, letterSpacing: 0.5,
   },
-  addButton: {
-    width: 38, height: 38, borderRadius: Radius.full,
-    backgroundColor: Colors.secondary, alignItems: 'center', justifyContent: 'center',
+  addBtn: {
+    paddingHorizontal: Spacing.md, paddingVertical: 8,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.secondary,
   },
-  addButtonText: {
-    color: Colors.primary, fontSize: 24, fontFamily: FontFamily.headingBold, lineHeight: 27,
-  },
-  filterRow: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, gap: Spacing.xs,
-  },
-  pill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: Spacing.sm + 2, paddingVertical: 6,
-    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.divider,
-  },
-  pillActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
-  pillText: { fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.textMuted },
-  pillTextActive: { color: Colors.secondary },
-  catDot: { width: 7, height: 7, borderRadius: 4 },
-  pillAdd: {
-    paddingHorizontal: Spacing.sm + 2, paddingVertical: 6,
-    borderRadius: Radius.full, borderWidth: 1,
-    borderColor: Colors.secondary + '55', borderStyle: 'dashed',
-  },
-  pillAddText: { fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.secondary },
-  sectionHeader: {
+  addBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.secondary },
+  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
+  empty: { alignItems: 'center', paddingTop: 80 },
+  emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary, marginBottom: Spacing.sm },
+  emptyText: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textMuted, textAlign: 'center' },
+  folderCard: {
     flexDirection: 'row', alignItems: 'center',
-    marginVertical: Spacing.sm, gap: Spacing.sm,
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: Spacing.md, marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.divider, overflow: 'hidden',
   },
-  sectionLine: { flex: 1, height: 1, backgroundColor: Colors.divider },
-  sectionTitle: {
-    fontSize: FontSize.xs, fontFamily: FontFamily.headingSemiBold,
-    color: Colors.textMuted, letterSpacing: 1.2, textTransform: 'uppercase',
+  folderIcon: {
+    width: 48, height: 48, borderRadius: Radius.md,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
+  folderEmoji: { fontSize: 24 },
+  folderInfo: { flex: 1 },
+  folderLabel: {
+    fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textPrimary, marginBottom: 3,
+  },
+  folderCount: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textMuted },
+  folderAccent: { width: 4, height: '100%', borderRadius: 2, position: 'absolute', right: 0 },
   // Modal
-  modalOverlay: {
-    flex: 1, justifyContent: 'flex-end',
-    backgroundColor: Colors.overlay,
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: Colors.overlay },
+  sheet: {
+    backgroundColor: Colors.surface, borderTopLeftRadius: Radius.lg, borderTopRightRadius: Radius.lg,
+    padding: Spacing.lg, paddingBottom: Spacing.xxl, borderTopWidth: 1, borderColor: Colors.divider,
   },
-  modalSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.lg, borderTopRightRadius: Radius.lg,
-    padding: Spacing.lg, paddingBottom: Spacing.xxl,
-    borderTopWidth: 1, borderColor: Colors.divider,
-  },
-  modalTitle: {
-    fontSize: FontSize.lg, fontFamily: FontFamily.headingBold,
-    color: Colors.textPrimary, marginBottom: Spacing.md,
-  },
-  modalInput: {
+  sheetTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary, marginBottom: Spacing.md },
+  input: {
     backgroundColor: Colors.inputBackground, borderRadius: Radius.md,
     paddingHorizontal: Spacing.md, paddingVertical: 12,
     fontSize: FontSize.md, fontFamily: FontFamily.body,
-    color: Colors.inputText, borderWidth: 1, borderColor: Colors.inputBorder,
-    marginBottom: Spacing.md,
+    color: Colors.inputText, borderWidth: 1, borderColor: Colors.inputBorder, marginBottom: Spacing.md,
   },
-  modalSubtitle: {
-    fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold,
-    color: Colors.textMuted, letterSpacing: 0.8,
-    textTransform: 'uppercase', marginBottom: Spacing.sm,
+  sheetLabel: {
+    fontSize: FontSize.xs, fontFamily: FontFamily.headingSemiBold,
+    color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: Spacing.sm,
   },
-  paletteRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginBottom: Spacing.md },
-  paletteCircle: { width: 30, height: 30, borderRadius: 15 },
-  paletteCircleActive: { borderWidth: 3, borderColor: Colors.textPrimary },
-  catRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  catRowDot: { width: 10, height: 10, borderRadius: 5 },
-  catRowLabel: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.body, color: Colors.textPrimary },
-  catRowDelete: { fontSize: FontSize.md, color: Colors.error, paddingHorizontal: Spacing.xs },
-  modalButtons: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
-  modalBtnPrimary: {
+  palette: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginBottom: Spacing.lg },
+  colorCircle: { width: 32, height: 32, borderRadius: 16 },
+  colorCircleActive: { borderWidth: 3, borderColor: Colors.textPrimary },
+  sheetButtons: { flexDirection: 'row', gap: Spacing.sm },
+  btnPrimary: {
     flex: 1, backgroundColor: Colors.secondary,
     borderRadius: Radius.md, paddingVertical: 14, alignItems: 'center',
   },
-  modalBtnPrimaryText: {
-    fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold, color: Colors.primary,
-  },
-  modalBtnSecondary: {
+  btnPrimaryText: { fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold, color: Colors.primary },
+  btnSecondary: {
     flex: 1, borderWidth: 1, borderColor: Colors.divider,
     borderRadius: Radius.md, paddingVertical: 14, alignItems: 'center',
   },
-  modalBtnSecondaryText: {
-    fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold, color: Colors.textMuted,
-  },
+  btnSecondaryText: { fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold, color: Colors.textMuted },
 });

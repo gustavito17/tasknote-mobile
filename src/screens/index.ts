@@ -2,6 +2,7 @@ export { EditorScreen } from './EditorScreen';
 export { LoginScreen } from './LoginScreen';
 export { RegisterScreen } from './RegisterScreen';
 export { HomeScreen } from './HomeScreen';
+export { FolderDetailScreen } from './FolderDetailScreen';
 export { CreateTaskScreen } from './CreateTaskScreen';
 export { TaskDetailScreen } from './TaskDetailScreen';
 export { CreateNoteScreen } from './CreateNoteScreen';
