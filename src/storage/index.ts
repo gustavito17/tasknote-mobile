@@ -1,17 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Note, User } from '../types';
 
-export type TaskCategory = 'trabajo' | 'personal' | 'urgente';
+export interface UserCategory {
+  id: string;
+  label: string;
+  color: string;
+}
 
 const STORAGE_KEYS = {
-  USER: '@TaskNote:user',
-  TASKS: '@TaskNote:tasks',
-  NOTES: '@TaskNote:notes',
-  PENDING_TASKS: '@TaskNote:pendingTasks',
-  PENDING_NOTES: '@TaskNote:pendingNotes',
-  LAST_SYNC: '@TaskNote:lastSync',
-  TASK_CATEGORIES: '@GusPad:taskCategories',
+  USER: '@GusPad:user',
+  TASKS: '@GusPad:tasks',
+  NOTES: '@GusPad:notes',
+  PENDING_TASKS: '@GusPad:pendingTasks',
+  PENDING_NOTES: '@GusPad:pendingNotes',
+  LAST_SYNC: '@GusPad:lastSync',
+  TASK_CATEGORIES_MAP: '@GusPad:taskCategoriesMap',
+  USER_CATEGORIES: '@GusPad:userCategories',
 };
+
+const DEFAULT_CATEGORIES: UserCategory[] = [
+  { id: 'trabajo', label: 'Trabajo', color: '#4FC3F7' },
+  { id: 'personal', label: 'Personal', color: '#CE93D8' },
+  { id: 'hogar', label: 'Hogar', color: '#FFCC80' },
+];
 
 export const storage = {
   async setUser(user: User | null): Promise<void> {
@@ -72,6 +83,52 @@ export const storage = {
     }
   },
 
+  // ── User-defined categories ─────────────────────────────────────────────────
+
+  async getUserCategories(): Promise<UserCategory[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.USER_CATEGORIES);
+      return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
+    } catch {
+      return DEFAULT_CATEGORIES;
+    }
+  },
+
+  async setUserCategories(categories: UserCategory[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_CATEGORIES, JSON.stringify(categories));
+    } catch (error) {
+      console.error('[Storage] Error saving user categories:', error);
+    }
+  },
+
+  // ── Task → category assignment ──────────────────────────────────────────────
+
+  async getTaskCategoryMap(): Promise<Record<number, string>> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.TASK_CATEGORIES_MAP);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  async setTaskCategory(taskId: number, categoryId: string | null): Promise<void> {
+    try {
+      const map = await this.getTaskCategoryMap();
+      if (categoryId === null) {
+        delete map[taskId];
+      } else {
+        map[taskId] = categoryId;
+      }
+      await AsyncStorage.setItem(STORAGE_KEYS.TASK_CATEGORIES_MAP, JSON.stringify(map));
+    } catch (error) {
+      console.error('[Storage] Error saving task category:', error);
+    }
+  },
+
+  // ── Misc ────────────────────────────────────────────────────────────────────
+
   async addPendingTask(operation: { type: 'create' | 'update' | 'delete'; data: any }): Promise<void> {
     try {
       const pending = await this.getPendingTasks();
@@ -86,8 +143,7 @@ export const storage = {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_TASKS);
       return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('[Storage] Error reading pending tasks:', error);
+    } catch {
       return [];
     }
   },
@@ -114,8 +170,7 @@ export const storage = {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_NOTES);
       return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('[Storage] Error reading pending notes:', error);
+    } catch {
       return [];
     }
   },
@@ -139,46 +194,14 @@ export const storage = {
   async getLastSync(): Promise<string | null> {
     try {
       return await AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC);
-    } catch (error) {
-      console.error('[Storage] Error reading last sync:', error);
+    } catch {
       return null;
-    }
-  },
-
-  async setTaskCategory(taskId: number, category: TaskCategory | null): Promise<void> {
-    try {
-      const map = await this.getTaskCategories();
-      if (category === null) {
-        delete map[taskId];
-      } else {
-        map[taskId] = category;
-      }
-      await AsyncStorage.setItem(STORAGE_KEYS.TASK_CATEGORIES, JSON.stringify(map));
-    } catch (error) {
-      console.error('[Storage] Error saving task category:', error);
-    }
-  },
-
-  async getTaskCategories(): Promise<Record<number, TaskCategory>> {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.TASK_CATEGORIES);
-      return data ? JSON.parse(data) : {};
-    } catch (error) {
-      console.error('[Storage] Error reading task categories:', error);
-      return {};
     }
   },
 
   async clearAll(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.USER,
-        STORAGE_KEYS.TASKS,
-        STORAGE_KEYS.NOTES,
-        STORAGE_KEYS.PENDING_TASKS,
-        STORAGE_KEYS.PENDING_NOTES,
-        STORAGE_KEYS.LAST_SYNC,
-      ]);
+      await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
     } catch (error) {
       console.error('[Storage] Error clearing all:', error);
     }

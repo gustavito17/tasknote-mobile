@@ -1,97 +1,155 @@
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Task, TaskStatus } from '../types';
+import React, { memo, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import Animated, { useAnimatedStyle, interpolate, SharedValue } from 'react-native-reanimated';
+import { Task } from '../types';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
+import { UserCategory } from '../storage';
 
 interface TaskCardProps {
   task: Task;
   onPress: () => void;
   onToggleStatus: () => void;
-  category?: string;
+  category?: UserCategory;
 }
-
-const CATEGORY_COLORS: Record<string, string> = {
-  trabajo: '#4FC3F7',
-  personal: '#CE93D8',
-  urgente: '#EF9A9A',
-};
 
 function parseDateBadge(description: string | null): { date: string | null; text: string } {
   if (!description) return { date: null, text: '' };
-  const match = description.match(/^📅 (.+?)\n?([\s\S]*)$/);
+  const match = description.match(/^📅 (.+?)\n([\s\S]*)$/);
   if (match) return { date: match[1], text: match[2].trim() };
   return { date: null, text: description };
+}
+
+function isToday(dateStr: string) {
+  return new Date(dateStr).toDateString() === new Date().toDateString();
+}
+
+function SwipeAction({
+  progress,
+  isCompleted,
+  onToggle,
+}: {
+  progress: SharedValue<number>;
+  isCompleted: boolean;
+  onToggle: () => void;
+}) {
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0, 1]),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.7, 1]) }],
+  }));
+
+  return (
+    <TouchableOpacity
+      style={[styles.swipeAction, { backgroundColor: isCompleted ? Colors.warning + 'CC' : Colors.secondary + 'CC' }]}
+      onPress={onToggle}
+      activeOpacity={0.8}
+    >
+      <Animated.Text style={[styles.swipeActionText, animStyle]}>
+        {isCompleted ? '↩ Reabrir' : '✓ Listo'}
+      </Animated.Text>
+    </TouchableOpacity>
+  );
 }
 
 function TaskCardComponent({ task, onPress, onToggleStatus, category }: TaskCardProps) {
   const isCompleted = task.status === 'completed';
   const { date, text } = parseDateBadge(task.description);
+  const swipeRef = useRef<Swipeable>(null);
 
-  const isToday = (() => {
-    const today = new Date().toDateString();
-    return new Date(task.createdAt).toDateString() === today;
-  })();
+  const handleToggle = () => {
+    swipeRef.current?.close();
+    onToggleStatus();
+  };
+
+  const renderRightActions = (progress: SharedValue<number>) => (
+    <SwipeAction progress={progress} isCompleted={isCompleted} onToggle={handleToggle} />
+  );
 
   return (
-    <TouchableOpacity
-      style={[styles.container, isCompleted && styles.containerCompleted]}
-      onPress={onPress}
-      activeOpacity={0.75}
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={60}
+      overshootRight={false}
     >
       <TouchableOpacity
-        style={[styles.checkbox, isCompleted && styles.checkboxCompleted]}
-        onPress={onToggleStatus}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={[styles.container, isCompleted && styles.containerCompleted]}
+        onPress={onPress}
+        activeOpacity={0.8}
       >
-        {isCompleted && <Text style={styles.checkmark}>✓</Text>}
+        {/* Status dot */}
+        <View style={[styles.statusDot, isCompleted && styles.statusDotCompleted]} />
+
+        <View style={styles.content}>
+          {/* Title row */}
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.title, isCompleted && styles.titleCompleted]}
+              numberOfLines={1}
+            >
+              {task.title}
+            </Text>
+            {isToday(task.createdAt) && !isCompleted && (
+              <View style={styles.todayBadge}>
+                <Text style={styles.todayBadgeText}>hoy</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Description */}
+          {text ? (
+            <Text
+              style={[styles.description, isCompleted && styles.descriptionCompleted]}
+              numberOfLines={2}
+            >
+              {text}
+            </Text>
+          ) : null}
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            {date ? (
+              <View style={styles.dateBadge}>
+                <Text style={styles.dateBadgeText}>📅 {date}</Text>
+              </View>
+            ) : null}
+            {category ? (
+              <View style={[styles.categoryBadge, { backgroundColor: category.color + '28' }]}>
+                <Text style={[styles.categoryText, { color: category.color }]}>
+                  {category.label}
+                </Text>
+              </View>
+            ) : null}
+            <Text style={styles.dateCreated}>
+              {new Date(task.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
+            </Text>
+          </View>
+        </View>
+
+        {/* Swipe hint arrow */}
+        <Text style={styles.swipeHint}>‹</Text>
       </TouchableOpacity>
-
-      <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <Text
-            style={[styles.title, isCompleted && styles.titleCompleted]}
-            numberOfLines={1}
-          >
-            {task.title}
-          </Text>
-          {isToday && !isCompleted && (
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>hoy</Text>
-            </View>
-          )}
-        </View>
-
-        {text ? (
-          <Text style={[styles.description, isCompleted && styles.descriptionCompleted]} numberOfLines={2}>
-            {text}
-          </Text>
-        ) : null}
-
-        <View style={styles.footer}>
-          {date ? (
-            <View style={styles.dateBadge}>
-              <Text style={styles.dateBadgeText}>📅 {date}</Text>
-            </View>
-          ) : null}
-          {category ? (
-            <View style={[styles.categoryBadge, { backgroundColor: CATEGORY_COLORS[category] + '22' }]}>
-              <Text style={[styles.categoryText, { color: CATEGORY_COLORS[category] }]}>
-                {category}
-              </Text>
-            </View>
-          ) : null}
-          <Text style={styles.dateCreated}>
-            {new Date(task.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    </Swipeable>
   );
 }
 
 export const TaskCard = memo(TaskCardComponent);
 
 const styles = StyleSheet.create({
+  swipeAction: {
+    width: 100,
+    marginBottom: Spacing.sm,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
+  },
+  swipeActionText: {
+    fontFamily: FontFamily.headingSemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.primary,
+    letterSpacing: 0.2,
+  },
   container: {
     flexDirection: 'row',
     backgroundColor: Colors.surface,
@@ -103,27 +161,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   containerCompleted: {
-    opacity: 0.6,
+    opacity: 0.55,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: Colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.sm,
-    marginTop: 2,
-  },
-  checkboxCompleted: {
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: Colors.secondary,
-    borderColor: Colors.secondary,
+    marginRight: Spacing.sm,
+    marginTop: 6,
   },
-  checkmark: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontFamily: FontFamily.headingBold,
+  statusDotCompleted: {
+    backgroundColor: Colors.textMuted,
   },
   content: {
     flex: 1,
@@ -145,10 +194,12 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   todayBadge: {
-    backgroundColor: Colors.secondary + '22',
+    backgroundColor: Colors.secondary + '20',
     borderRadius: Radius.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.secondary + '40',
   },
   todayBadgeText: {
     fontSize: FontSize.xs,
@@ -164,7 +215,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   descriptionCompleted: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   footer: {
     flexDirection: 'row',
@@ -173,7 +224,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dateBadge: {
-    backgroundColor: Colors.warning + '22',
+    backgroundColor: Colors.warning + '20',
     borderRadius: Radius.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -198,5 +249,12 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.body,
     color: Colors.textMuted,
     marginLeft: 'auto',
+  },
+  swipeHint: {
+    color: Colors.textMuted,
+    fontSize: 18,
+    marginLeft: Spacing.xs,
+    marginTop: 2,
+    opacity: 0.5,
   },
 });
