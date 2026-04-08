@@ -43,10 +43,11 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 
-const TAB_ICONS: Record<string, string> = {
-  HomeTab: '📁',
-  FechasTab: '📅',
-  ProfileTab: '👤',
+// Minimalist Unicode icons (no emoji, thin line style)
+const TAB_ICONS: Record<string, { icon: string; size: number }> = {
+  HomeTab:    { icon: '⊟', size: 22 },
+  FechasTab:  { icon: '◫', size: 22 },
+  ProfileTab: { icon: '○', size: 22 },
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -94,11 +95,20 @@ function MainTabNavigator() {
         tabBarActiveTintColor: Colors.secondary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: { fontFamily: FontFamily.headingSemiBold, fontSize: FontSize.xs },
-        tabBarIcon: ({ focused }) => (
-          <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>
-            {TAB_ICONS[route.name]}
-          </Text>
-        ),
+        tabBarIcon: ({ focused, color }) => {
+          const { icon, size } = TAB_ICONS[route.name] ?? { icon: '○', size: 22 };
+          return (
+            <Text style={{
+              fontSize: size,
+              color,
+              opacity: focused ? 1 : 0.5,
+              lineHeight: size + 4,
+              includeFontPadding: false,
+            }}>
+              {icon}
+            </Text>
+          );
+        },
       })}
     >
       <MainTab.Screen

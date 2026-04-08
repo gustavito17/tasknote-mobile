@@ -232,7 +232,7 @@ export function FechasScreen() {
           <Text style={[styles.chipText, filterDate && !isTodayFilter && !isTmrwFilter && styles.chipTextActive]}>
             {filterDate && !isTodayFilter && !isTmrwFilter
               ? filterDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })
-              : '📅 Fecha'}
+              : 'Fecha'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingTop: Spacing.xxl,
     paddingBottom: Spacing.sm,
   },
   title: {
