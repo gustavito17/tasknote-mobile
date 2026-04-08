@@ -13,6 +13,7 @@ import type { UserCategory } from '../storage';
 
 type CreateTaskScreenProps = {
   navigation: NativeStackNavigationProp<any>;
+  route: { params?: { categoryId?: string } };
 };
 
 // Builds a simple calendar grid for current/next month
@@ -40,12 +41,14 @@ function isBeforeToday(d: Date) {
   return d < today;
 }
 
-export function CreateTaskScreen({ navigation }: CreateTaskScreenProps) {
+export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const { createTask } = useTasks();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    route?.params?.categoryId ?? null
+  );
   const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
