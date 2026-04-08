@@ -8,3 +8,5 @@ export { TaskDetailScreen } from './TaskDetailScreen';
 export { CreateNoteScreen } from './CreateNoteScreen';
 export { NoteDetailScreen } from './NoteDetailScreen';
 export { ProfileScreen } from './ProfileScreen';
+export { TodosScreen } from './TodosScreen';
+export { FechasScreen } from './FechasScreen';

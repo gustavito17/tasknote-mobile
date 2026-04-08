@@ -10,6 +10,8 @@ import {
   FolderDetailScreen,
   CreateTaskScreen,
   ProfileScreen,
+  TodosScreen,
+  FechasScreen,
 } from '../screens';
 import { useAuth } from '../context';
 import { Loading } from '../components';
@@ -27,6 +29,8 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   HomeTab: undefined;
+  TodosTab: undefined;
+  FechasTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -40,6 +44,20 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+
+const TAB_ICONS: Record<string, string> = {
+  HomeTab: '📁',
+  TodosTab: '✅',
+  FechasTab: '📅',
+  ProfileTab: '👤',
+};
+
+const TAB_LABELS: Record<string, string> = {
+  HomeTab: 'Carpetas',
+  TodosTab: 'Todos',
+  FechasTab: 'Fechas',
+  ProfileTab: 'Perfil',
+};
 
 function HomeStackNavigator() {
   return (
@@ -80,26 +98,52 @@ function MainTabNavigator() {
         tabBarActiveTintColor: Colors.secondary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: { fontFamily: FontFamily.headingSemiBold, fontSize: FontSize.xs },
-        tabBarIcon: ({ focused }) => {
-          const icons: Record<string, string> = { HomeTab: '📋', ProfileTab: '👤' };
-          return (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.45 }}>
-              {icons[route.name]}
-            </Text>
-          );
-        },
+        tabBarIcon: ({ focused }) => (
+          <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>
+            {TAB_ICONS[route.name]}
+          </Text>
+        ),
       })}
     >
-      <MainTab.Screen name="HomeTab" component={HomeStackNavigator} options={{ title: 'Tareas' }} />
       <MainTab.Screen
-        name="ProfileTab"
-        component={ProfileScreen}
+        name="HomeTab"
+        component={HomeStackNavigator}
+        options={{ title: TAB_LABELS.HomeTab }}
+      />
+      <MainTab.Screen
+        name="TodosTab"
+        component={TodosScreen}
         options={{
-          title: 'Perfil',
+          title: TAB_LABELS.TodosTab,
           headerShown: true,
           headerStyle: { backgroundColor: Colors.background },
           headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
           headerShadowVisible: false,
+          headerTitle: 'Todas',
+        }}
+      />
+      <MainTab.Screen
+        name="FechasTab"
+        component={FechasScreen}
+        options={{
+          title: TAB_LABELS.FechasTab,
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.background },
+          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
+          headerShadowVisible: false,
+          headerTitle: 'Por fechas',
+        }}
+      />
+      <MainTab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          title: TAB_LABELS.ProfileTab,
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.background },
+          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
+          headerShadowVisible: false,
+          headerTitle: 'Perfil',
         }}
       />
     </MainTab.Navigator>
@@ -155,4 +199,3 @@ function AuthNavigator() {
     </AuthStack.Navigator>
   );
 }
-

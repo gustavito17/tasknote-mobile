@@ -6,6 +6,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Loading } from '../components';
+import { TaskRow } from '../components/TaskRow';
 import { useTasks } from '../context';
 import { Task } from '../types';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
@@ -16,39 +17,9 @@ type FolderDetailProps = {
   route: { params: { categoryId: string; categoryLabel: string; categoryColor: string } };
 };
 
-function parseDateBadge(description: string | null): { date: string | null; text: string } {
-  if (!description) return { date: null, text: '' };
-  const match = description.match(/^📅 (.+?)\n([\s\S]*)$/);
-  if (match) return { date: match[1], text: match[2].trim() };
-  return { date: null, text: description };
-}
-
-function TaskRow({ task, onToggle }: { task: Task; onToggle: () => void }) {
-  const isCompleted = task.status === 'completed';
-  const { date, text } = parseDateBadge(task.description);
-
-  return (
-    // Tap anywhere on row = toggle
-    <TouchableOpacity style={[styles.row, isCompleted && styles.rowCompleted]} onPress={onToggle} activeOpacity={0.75}>
-      {/* Checkbox */}
-      <View style={[styles.checkbox, isCompleted && styles.checkboxDone]}>
-        {isCompleted && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-
-      <View style={styles.rowContent}>
-        <Text style={[styles.rowTitle, isCompleted && styles.rowTitleDone]} numberOfLines={1}>
-          {task.title}
-        </Text>
-        {text ? <Text style={styles.rowDesc} numberOfLines={1}>{text}</Text> : null}
-        {date ? <Text style={styles.rowDate}>📅 {date}</Text> : null}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
   const { categoryId, categoryLabel, categoryColor } = route.params;
-  const { tasks, isLoading, fetchTasks, updateTaskStatus } = useTasks();
+  const { tasks, isLoading, fetchTasks, updateTaskStatus, deleteTask } = useTasks();
   const [categoryMap, setCategoryMap] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
 
@@ -70,13 +41,17 @@ export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
     updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');
   }, [updateTaskStatus]);
 
+  const handleDelete = useCallback(async (task: Task) => {
+    await deleteTask(task.id);
+    await storage.setTaskCategory(task.id, null);
+  }, [deleteTask]);
+
   const folderTasks = tasks.filter((t) =>
     categoryId === '__none__' ? !categoryMap[t.id] : categoryMap[t.id] === categoryId
   );
 
   const pending = folderTasks.filter((t) => t.status === 'pending');
   const completed = folderTasks.filter((t) => t.status === 'completed');
-
   const sections: Task[] = [...pending, ...completed];
 
   if (isLoading === 'loading' && tasks.length === 0) {
@@ -102,7 +77,7 @@ export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Stats row */}
+      {/* Stats */}
       <View style={styles.statsRow}>
         <Text style={styles.statText}>{pending.length} pendiente{pending.length !== 1 ? 's' : ''}</Text>
         <Text style={styles.statDivider}>·</Text>
@@ -124,7 +99,11 @@ export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
-            <TaskRow task={item} onToggle={() => handleToggle(item)} />
+            <TaskRow
+              task={item}
+              onToggle={() => handleToggle(item)}
+              onDelete={() => handleDelete(item)}
+            />
           )}
         />
       )}
@@ -156,30 +135,6 @@ const styles = StyleSheet.create({
   statDivider: { color: Colors.divider },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
   separator: { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.xs },
-  // Task row
-  row: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: Colors.surface, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.md, marginVertical: 2,
-  },
-  rowCompleted: { opacity: 0.5 },
-  checkbox: {
-    width: 24, height: 24, borderRadius: 12,
-    borderWidth: 2, borderColor: Colors.secondary,
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: Spacing.sm, marginTop: 1,
-  },
-  checkboxDone: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  checkmark: { color: Colors.primary, fontSize: 13, fontFamily: FontFamily.headingBold },
-  rowContent: { flex: 1 },
-  rowTitle: {
-    fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold,
-    color: Colors.textPrimary, marginBottom: 2,
-  },
-  rowTitleDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  rowDesc: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textMuted },
-  rowDate: { fontSize: FontSize.xs, fontFamily: FontFamily.body, color: Colors.warning, marginTop: 2 },
-  // Empty state
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
   emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary, marginBottom: Spacing.sm },
   emptyText: { fontSize: FontSize.sm, fontFamily: FontFamily.body, color: Colors.textMuted, textAlign: 'center' },
