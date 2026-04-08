@@ -10,7 +10,6 @@ import {
   FolderDetailScreen,
   CreateTaskScreen,
   ProfileScreen,
-  TodosScreen,
   FechasScreen,
 } from '../screens';
 import { useAuth } from '../context';
@@ -29,7 +28,6 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  TodosTab: undefined;
   FechasTab: undefined;
   ProfileTab: undefined;
 };
@@ -47,14 +45,12 @@ const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 
 const TAB_ICONS: Record<string, string> = {
   HomeTab: '📁',
-  TodosTab: '✅',
   FechasTab: '📅',
   ProfileTab: '👤',
 };
 
 const TAB_LABELS: Record<string, string> = {
   HomeTab: 'Carpetas',
-  TodosTab: 'Todos',
   FechasTab: 'Fechas',
   ProfileTab: 'Perfil',
 };
@@ -111,40 +107,14 @@ function MainTabNavigator() {
         options={{ title: TAB_LABELS.HomeTab }}
       />
       <MainTab.Screen
-        name="TodosTab"
-        component={TodosScreen}
-        options={{
-          title: TAB_LABELS.TodosTab,
-          headerShown: true,
-          headerStyle: { backgroundColor: Colors.background },
-          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
-          headerShadowVisible: false,
-          headerTitle: 'Todas',
-        }}
-      />
-      <MainTab.Screen
         name="FechasTab"
         component={FechasScreen}
-        options={{
-          title: TAB_LABELS.FechasTab,
-          headerShown: true,
-          headerStyle: { backgroundColor: Colors.background },
-          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
-          headerShadowVisible: false,
-          headerTitle: 'Por fechas',
-        }}
+        options={{ title: TAB_LABELS.FechasTab, headerShown: false }}
       />
       <MainTab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{
-          title: TAB_LABELS.ProfileTab,
-          headerShown: true,
-          headerStyle: { backgroundColor: Colors.background },
-          headerTitleStyle: { fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
-          headerShadowVisible: false,
-          headerTitle: 'Perfil',
-        }}
+        options={{ title: TAB_LABELS.ProfileTab, headerShown: false }}
       />
     </MainTab.Navigator>
   );

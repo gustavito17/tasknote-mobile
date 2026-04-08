@@ -19,6 +19,9 @@ export function ProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
+      {/* Brand header */}
+      <Text style={styles.brand}>GusPad</Text>
+
       {/* Avatar */}
       <View style={styles.avatarRing}>
         <View style={styles.avatar}>
@@ -60,9 +63,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xxl,
     alignItems: 'center',
+  },
+  brand: {
+    fontSize: FontSize.xxl,
+    fontFamily: FontFamily.headingBold,
+    color: Colors.textPrimary,
+    letterSpacing: 1,
+    alignSelf: 'flex-start',
+    marginBottom: Spacing.xl,
   },
   avatarRing: {
     padding: 3,

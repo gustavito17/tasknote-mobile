@@ -191,7 +191,7 @@ export function FechasScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Por fechas</Text>
+        <Text style={styles.title}>GusPad</Text>
         {filterDate && (
           <TouchableOpacity onPress={clearFilter} style={styles.clearBtn}>
             <Text style={styles.clearBtnText}>Mostrar todo ✕</Text>
