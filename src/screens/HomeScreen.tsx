@@ -204,8 +204,13 @@ const styles = StyleSheet.create({
   addBtn: {
     paddingHorizontal: Spacing.md, paddingVertical: 8,
     borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.secondary,
+    alignItems: 'center', justifyContent: 'center',
   },
-  addBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.secondary },
+  addBtnText: {
+    fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold,
+    color: Colors.secondary, textAlign: 'center',
+    includeFontPadding: false, textAlignVertical: 'center',
+  },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary, marginBottom: Spacing.sm },

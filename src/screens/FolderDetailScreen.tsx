@@ -116,10 +116,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.md, paddingTop: Spacing.xxl, paddingBottom: Spacing.md,
   },
-  backBtn: { padding: Spacing.sm, marginRight: Spacing.xs },
-  backText: { fontSize: 28, color: Colors.secondary, fontFamily: FontFamily.headingBold, lineHeight: 30 },
+  backBtn: {
+    width: 36, height: 36, borderRadius: Radius.full,
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: Spacing.xs,
+  },
+  backText: {
+    fontSize: 22, color: Colors.secondary,
+    fontFamily: FontFamily.headingBold,
+    includeFontPadding: false, textAlignVertical: 'center',
+  },
   headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerDot: { width: 10, height: 10, borderRadius: 5 },
   headerTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
@@ -127,7 +135,10 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: Radius.full,
     backgroundColor: Colors.secondary, alignItems: 'center', justifyContent: 'center',
   },
-  createBtnText: { fontSize: 22, fontFamily: FontFamily.headingBold, color: Colors.primary, lineHeight: 25 },
+  createBtnText: {
+    fontSize: 22, fontFamily: FontFamily.headingBold, color: Colors.primary,
+    includeFontPadding: false, textAlignVertical: 'center',
+  },
   statsRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm,
