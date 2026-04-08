@@ -24,18 +24,19 @@ export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
-    fetchTasks({ limit: 100 } as any);
+    // Tasks already in context from HomeScreen fetch — only reload local storage
     const map = await storage.getTaskCategoryMap();
     setCategoryMap(map);
-  }, [fetchTasks]);
+  }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    fetchTasks({ limit: 100 } as any);
     await loadData();
     setRefreshing(false);
-  }, [loadData]);
+  }, [fetchTasks, loadData]);
 
   const handleToggle = useCallback((task: Task) => {
     updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');

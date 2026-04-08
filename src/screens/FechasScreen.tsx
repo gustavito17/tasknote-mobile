@@ -64,22 +64,23 @@ export function FechasScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
-    fetchTasks({ limit: 200 } as any);
+    // Tasks already in context from HomeScreen fetch — only reload local storage
     const [map, cats] = await Promise.all([
       storage.getTaskCategoryMap(),
       storage.getUserCategories(),
     ]);
     setCategoryMap(map);
     setUserCategories(cats);
-  }, [fetchTasks]);
+  }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    fetchTasks({ limit: 100 });
     await loadData();
     setRefreshing(false);
-  }, [loadData]);
+  }, [fetchTasks, loadData]);
 
   const handleToggle = useCallback((task: Task) => {
     updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');
