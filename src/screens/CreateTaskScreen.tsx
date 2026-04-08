@@ -107,7 +107,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [title, description, scheduledDate, selectedCategory, createTask, navigation]);
+  }, [title, description, scheduledDate, categoryId, createTask, navigation]);
 
   const calDays = buildCalendarDays(calYear, calMonth);
 
