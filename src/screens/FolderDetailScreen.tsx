@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   createBtnText: {
     fontSize: 22, fontFamily: FontFamily.headingBold, color: Colors.primary,
     includeFontPadding: false, textAlignVertical: 'center',
+    lineHeight: 24, textAlign: 'center',
   },
   statsRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
