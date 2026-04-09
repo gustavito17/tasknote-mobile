@@ -377,9 +377,12 @@ export function FechasScreen() {
                 </View>
 
                 {/* Cuadrícula de días */}
-                {Array.from({ length: Math.ceil(calDays.length / 7) }).map((_, rowIdx) => (
+                {Array.from({ length: Math.ceil(calDays.length / 7) }).map((_, rowIdx) => {
+                  const slice = [...calDays.slice(rowIdx * 7, rowIdx * 7 + 7)];
+                  while (slice.length < 7) slice.push(null);
+                  return (
                   <View key={rowIdx} style={styles.calRow}>
-                    {calDays.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, ci) => {
+                    {slice.map((day, ci) => {
                       if (!day) return <View key={`e-${rowIdx}-${ci}`} style={styles.calCell} />;
                       const selected = filterDate && isSameDay(day, filterDate);
                       const isToday  = isSameDay(day, today);
@@ -400,7 +403,8 @@ export function FechasScreen() {
                       );
                     })}
                   </View>
-                ))}
+                  );
+                })}
               </>
             )}
 
