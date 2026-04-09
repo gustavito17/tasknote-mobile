@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types';
 import { authApi, apiClient } from '../api';
+import { signInWithGoogle } from '../api/supabase';
 import storage from '../storage';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -121,6 +123,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const accessToken = await signInWithGoogle();
+      const response = await authApi.googleLogin(accessToken);
+      if (response.success) {
+        await apiClient.setToken(response.data.token);
+        await storage.setUser(response.data.user);
+        dispatch({ type: 'SET_USER', payload: response.data });
+      }
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: '' });
+      throw error;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await apiClient.clearToken();
@@ -135,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...state,
     login,
     register,
+    loginWithGoogle,
     logout,
     checkAuth,
   };

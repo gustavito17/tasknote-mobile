@@ -144,7 +144,7 @@ export function AppNavigator() {
 }
 
 function AuthNavigator() {
-  const { login, register, isLoading } = useAuth();
+  const { login, register, loginWithGoogle, isLoading } = useAuth();
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login">
@@ -152,6 +152,7 @@ function AuthNavigator() {
           <LoginScreen
             {...props}
             onLogin={login}
+            onLoginWithGoogle={loginWithGoogle}
             onNavigateToRegister={() => props.navigation.navigate('Register')}
             isLoading={isLoading}
             error={null}

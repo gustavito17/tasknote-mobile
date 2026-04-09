@@ -17,6 +17,11 @@ export const authApi = {
     return response.data;
   },
 
+  googleLogin: async (accessToken: string): Promise<AuthResponse> => {
+    const response = await apiClient.instance.post<AuthResponse>('/auth/google', { access_token: accessToken });
+    return response.data;
+  },
+
   getCurrentUser: async (): Promise<{ success: boolean; data: User }> => {
     const response = await apiClient.instance.get('/auth/me');
     return response.data;

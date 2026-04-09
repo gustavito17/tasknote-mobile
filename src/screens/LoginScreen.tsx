@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { Button } from '../components';
 import { Input } from '../components';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 
 interface LoginScreenProps {
   onLogin: (credentials: { email: string; password: string }) => Promise<void>;
+  onLoginWithGoogle: () => Promise<void>;
   onNavigateToRegister: () => void;
   isLoading: boolean;
   error: string | null;
 }
 
-export function LoginScreen({ onLogin, onNavigateToRegister, isLoading, error }: LoginScreenProps) {
+export function LoginScreen({ onLogin, onLoginWithGoogle, onNavigateToRegister, isLoading, error }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -66,6 +67,17 @@ export function LoginScreen({ onLogin, onNavigateToRegister, isLoading, error }:
               disabled={!email || !password}
               style={styles.submitButton}
             />
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity style={styles.googleBtn} onPress={onLoginWithGoogle} disabled={isLoading}>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleText}>Continuar con Google</Text>
+            </TouchableOpacity>
 
             <Button
               title="Crear Cuenta"
@@ -136,5 +148,23 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.body,
     textAlign: 'center',
     marginBottom: Spacing.xs,
+  },
+  dividerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginVertical: Spacing.sm,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.divider },
+  dividerText: { fontSize: FontSize.xs, fontFamily: FontFamily.body, color: Colors.textMuted },
+  googleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: Spacing.sm, paddingVertical: 13,
+    borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.divider,
+    backgroundColor: Colors.surface, marginBottom: Spacing.xs,
+  },
+  googleIcon: {
+    fontSize: FontSize.md, fontFamily: FontFamily.headingBold,
+    color: '#4285F4', width: 20, textAlign: 'center',
+  },
+  googleText: {
+    fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold, color: Colors.textPrimary,
   },
 });

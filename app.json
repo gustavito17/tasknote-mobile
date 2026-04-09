@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TaskNote",
-    "slug": "tasknote-mobile",
+    "name": "GusPad",
+    "slug": "guspad-mobile",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
@@ -9,14 +9,16 @@
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0C2729"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "plugins": [
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "apiUrl": "https://tasknote-api.onrender.com/api",
@@ -25,10 +27,19 @@
       }
     },
     "android": {
-      "package": "com.anonymous.tasknotemobile"
+      "package": "com.anonymous.tasknotemobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "guspad", "host": "auth", "pathPrefix": "/callback" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.anonymous.tasknotemobile"
-    }
+    },
+    "scheme": "guspad"
   }
 }
