@@ -389,16 +389,18 @@ export function FechasScreen() {
                       return (
                         <TouchableOpacity
                           key={day.toISOString()}
-                          style={[styles.calCell, isToday && styles.calCellToday, selected && styles.calCellSelected]}
+                          style={styles.calCell}
                           onPress={() => handleCalendarDay(day)}
                         >
-                          <Text style={[
-                            styles.calCellText,
-                            isToday && styles.calCellTodayText,
-                            selected && styles.calCellSelectedText,
-                          ]}>
-                            {day.getDate()}
-                          </Text>
+                          <View style={[styles.calCircle, isToday && styles.calCircleToday, selected && styles.calCircleSelected]}>
+                            <Text style={[
+                              styles.calCellText,
+                              isToday && styles.calCellTodayText,
+                              selected && styles.calCellSelectedText,
+                            ]}>
+                              {day.getDate()}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       );
                     })}
@@ -585,20 +587,13 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.body,
     color: Colors.textPrimary,
   },
-  calCellToday: {
-    borderWidth: 1.5,
-    borderColor: Colors.secondary,
-    borderRadius: 20,
-    width: 34,
-    height: 34,
+  calCircle: {
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
   },
+  calCircleToday: { borderWidth: 1.5, borderColor: Colors.secondary },
+  calCircleSelected: { backgroundColor: Colors.secondary },
   calCellTodayText: { color: Colors.secondary, fontFamily: FontFamily.headingSemiBold },
-  calCellSelected: {
-    backgroundColor: Colors.secondary,
-    borderRadius: 20,
-    width: 34,
-    height: 34,
-  },
   calCellSelectedText: { color: Colors.primary, fontFamily: FontFamily.headingBold },
 
   // ── Month/year picker ──────────────────────────────────────────────────────
