@@ -56,7 +56,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
-  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() + 9 - i);
+  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - i);
 
   useEffect(() => {
     if (categoryId) {

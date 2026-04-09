@@ -82,7 +82,7 @@ export function FechasScreen() {
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
 
-  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() + 9 - i);
+  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - i);
 
   const loadData = useCallback(async () => {
     const [map, cats] = await Promise.all([
