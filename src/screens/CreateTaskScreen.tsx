@@ -56,7 +56,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
-  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - 2 + i);
+  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() + 9 - i);
 
   useEffect(() => {
     if (categoryId) {
@@ -281,7 +281,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
             ) : (
               <>
                 {/* Nombres de día */}
-                <View style={styles.calRow}>
+                <View style={[styles.calRow, styles.calDayNamesRow]}>
                   {DAY_NAMES.map((d) => (
                     <View key={d} style={styles.calCell}>
                       <Text style={styles.calDayName}>{d}</Text>
@@ -431,6 +431,7 @@ const styles = StyleSheet.create({
   },
   calMonthLabel: { fontSize: FontSize.md, fontFamily: FontFamily.headingBold, color: Colors.textPrimary },
   calMonthCaret: { fontSize: 10, color: Colors.secondary, lineHeight: 16 },
+  calDayNamesRow: { marginBottom: 2 },
   calRow: { flexDirection: 'row' },
   calCell: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' },
   calDayName: {
