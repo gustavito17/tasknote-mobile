@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, SectionList, RefreshControl,
   TouchableOpacity, Modal, ScrollView,
@@ -81,8 +81,13 @@ export function FechasScreen() {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
+  const yearScrollRef = useRef<any>(null);
 
-  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - i);
+  // Fechas: 6 años pasados + actual + 5 futuros, ascendente
+  const YEAR_START = today.getFullYear() - 6;
+  const YEARS = Array.from({ length: 12 }, (_, i) => YEAR_START + i);
+  const YEAR_CHIP_W = 68; // ancho fijo para calcular scroll
+  const currentYearIdx = YEARS.indexOf(today.getFullYear());
 
   const loadData = useCallback(async () => {
     const [map, cats] = await Promise.all([
@@ -295,7 +300,21 @@ export function FechasScreen() {
               )}
               <TouchableOpacity
                 style={styles.calMonthBtn}
-                onPress={() => setCalMode(m => m === 'picker' ? 'calendar' : 'picker')}
+                onPress={() => {
+                  setCalMode(m => {
+                    if (m === 'calendar') {
+                      // Auto-scroll al año actual al abrir picker
+                      setTimeout(() => {
+                        yearScrollRef.current?.scrollTo({
+                          x: Math.max(0, currentYearIdx * YEAR_CHIP_W - 8),
+                          animated: true,
+                        });
+                      }, 50);
+                      return 'picker';
+                    }
+                    return 'calendar';
+                  });
+                }}
               >
                 <Text style={styles.calMonthLabel}>{MONTH_NAMES[calMonth]} {calYear}</Text>
                 <Text style={styles.calMonthCaret}>{calMode === 'picker' ? '▲' : '▼'}</Text>
@@ -312,6 +331,7 @@ export function FechasScreen() {
               <>
                 {/* Años: scroll horizontal */}
                 <ScrollView
+                  ref={yearScrollRef}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.yearRow}
@@ -585,7 +605,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   yearChip: {
-    paddingHorizontal: Spacing.md,
+    width: 68,
+    alignItems: 'center',
     paddingVertical: 8,
     borderRadius: Radius.full,
     borderWidth: 1,

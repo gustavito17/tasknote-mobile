@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TextInput, ScrollView,
   KeyboardAvoidingView, Platform, TouchableOpacity, Modal,
@@ -56,7 +56,10 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
-  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() - i);
+  // CreateTask: ascendente desde el año actual (+11 años)
+  const YEARS = Array.from({ length: 12 }, (_, i) => today.getFullYear() + i);
+  const YEAR_CHIP_W = 68;
+  const yearScrollRef = useRef<any>(null);
 
   useEffect(() => {
     if (categoryId) {
@@ -232,7 +235,17 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
               )}
               <TouchableOpacity
                 style={styles.calMonthBtn}
-                onPress={() => setCalMode(m => m === 'picker' ? 'calendar' : 'picker')}
+                onPress={() => {
+                  setCalMode(m => {
+                    if (m === 'calendar') {
+                      setTimeout(() => {
+                        yearScrollRef.current?.scrollTo({ x: 0, animated: false });
+                      }, 50);
+                      return 'picker';
+                    }
+                    return 'calendar';
+                  });
+                }}
               >
                 <Text style={styles.calMonthLabel}>{MONTH_NAMES[calMonth]} {calYear}</Text>
                 <Text style={styles.calMonthCaret}>{calMode === 'picker' ? '▲' : '▼'}</Text>
@@ -248,6 +261,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
               <>
                 {/* Años */}
                 <ScrollView
+                  ref={yearScrollRef}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.yearRow}
@@ -449,7 +463,9 @@ const styles = StyleSheet.create({
   // Picker
   yearRow: { flexDirection: 'row', gap: Spacing.xs, paddingVertical: Spacing.sm, paddingHorizontal: 2 },
   yearChip: {
-    paddingHorizontal: Spacing.md, paddingVertical: 8,
+    width: 68,
+    alignItems: 'center',
+    paddingVertical: 8,
     borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.divider,
     backgroundColor: Colors.background,
   },
