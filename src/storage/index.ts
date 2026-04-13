@@ -18,11 +18,7 @@ const STORAGE_KEYS = {
   USER_CATEGORIES: '@GusPad:userCategories',
 };
 
-const DEFAULT_CATEGORIES: UserCategory[] = [
-  { id: 'trabajo', label: 'Trabajo', color: '#4FC3F7' },
-  { id: 'personal', label: 'Personal', color: '#CE93D8' },
-  { id: 'hogar', label: 'Hogar', color: '#FFCC80' },
-];
+const DEFAULT_CATEGORIES: UserCategory[] = [];
 
 export const storage = {
   async setUser(user: User | null): Promise<void> {
