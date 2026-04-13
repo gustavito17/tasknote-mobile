@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: FontSize.sm, fontFamily: FontFamily.headingSemiBold,
     color: Colors.secondary, textAlign: 'center',
-    includeFontPadding: false, textAlignVertical: 'center',
+    lineHeight: FontSize.sm, includeFontPadding: false,
   },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
   empty: { alignItems: 'center', paddingTop: 80 },
@@ -249,7 +249,11 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: Radius.md,
     alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  folderIconSymbol: { fontSize: 22, fontFamily: FontFamily.headingBold, lineHeight: 26, includeFontPadding: false },
+  folderIconSymbol: {
+    fontSize: 22, lineHeight: 22,
+    textAlign: 'center', textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   folderInfo: { flex: 1 },
   folderLabel: {
     fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold,
@@ -280,7 +284,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.surfaceAlt, borderWidth: 2, borderColor: 'transparent',
   },
-  iconSymbol: { fontSize: 18, lineHeight: 22, includeFontPadding: false },
+  iconSymbol: {
+    fontSize: 18, lineHeight: 18,
+    textAlign: 'center', textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   colorCircle: { width: 32, height: 32, borderRadius: 16 },
   colorCircleActive: { borderWidth: 3, borderColor: Colors.textPrimary },
   sheetButtons: { flexDirection: 'row', gap: Spacing.sm },
