@@ -28,6 +28,10 @@
     },
     "android": {
       "package": "com.anonymous.guspad",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/gplogo.png",
+        "backgroundColor": "#BAEBBE"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
