@@ -17,6 +17,13 @@ type HomeScreenProps = {
 
 const PALETTE = ['#4FC3F7', '#CE93D8', '#FFCC80', '#80CBC4', '#EF9A9A', '#A5D6A7', '#FFD54F', '#90CAF9'];
 
+const ICON_SET = [
+  '◈', '⬡', '◻', '◆', '⊞', '⊟', '◉', '⬤',
+  '▲', '◀', '▶', '▼', '◇', '○', '□', '△',
+  '⊕', '⊗', '⊘', '⊙', '⊛', '⊜', '※', '✦',
+  '✧', '✶', '✸', '❋', '❖', '⟐', '⟡', '⟢',
+];
+
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { tasks, fetchTasks } = useTasks();
   const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
@@ -27,6 +34,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const [showModal, setShowModal] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newColor, setNewColor] = useState(PALETTE[0]);
+  const [newIcon, setNewIcon] = useState(ICON_SET[0]);
 
   const loadData = useCallback(async () => {
     fetchTasks({ limit: 100 } as any);
@@ -49,14 +57,15 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const handleAddFolder = useCallback(async () => {
     const label = newLabel.trim();
     if (!label) return;
-    const newCat: UserCategory = { id: `cat_${Date.now()}`, label, color: newColor };
+    const newCat: UserCategory = { id: `cat_${Date.now()}`, label, color: newColor, icon: newIcon };
     const updated = [...userCategories, newCat];
     await storage.setUserCategories(updated);
     setUserCategories(updated);
     setNewLabel('');
     setNewColor(PALETTE[0]);
+    setNewIcon(ICON_SET[0]);
     setShowModal(false);
-  }, [newLabel, newColor, userCategories]);
+  }, [newLabel, newColor, newIcon, userCategories]);
 
   const handleDeleteFolder = useCallback((catId: string) => {
     Alert.alert('Eliminar carpeta', '¿Eliminar esta carpeta? Las tareas no se borrarán.', [
@@ -129,7 +138,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               activeOpacity={0.75}
             >
               <View style={[styles.folderIcon, { backgroundColor: item.color + '25' }]}>
-                <Text style={styles.folderEmoji}>📁</Text>
+                <Text style={[styles.folderIconSymbol, { color: item.color }]}>
+                  {(item as UserCategory).icon ?? '◈'}
+                </Text>
               </View>
               <View style={styles.folderInfo}>
                 <Text style={styles.folderLabel}>{item.label}</Text>
@@ -157,6 +168,19 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               onChangeText={setNewLabel}
               autoFocus
             />
+
+            <Text style={styles.sheetLabel}>Ícono</Text>
+            <View style={styles.palette}>
+              {ICON_SET.map((ic) => (
+                <TouchableOpacity
+                  key={ic}
+                  style={[styles.iconCircle, newIcon === ic && { borderColor: newColor, borderWidth: 2 }]}
+                  onPress={() => setNewIcon(ic)}
+                >
+                  <Text style={[styles.iconSymbol, { color: newIcon === ic ? newColor : Colors.textMuted }]}>{ic}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <Text style={styles.sheetLabel}>Color</Text>
             <View style={styles.palette}>
@@ -225,7 +249,7 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: Radius.md,
     alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  folderEmoji: { fontSize: 24 },
+  folderIconSymbol: { fontSize: 22, fontFamily: FontFamily.headingBold, lineHeight: 26, includeFontPadding: false },
   folderInfo: { flex: 1 },
   folderLabel: {
     fontSize: FontSize.md, fontFamily: FontFamily.headingSemiBold,
@@ -251,6 +275,12 @@ const styles = StyleSheet.create({
     color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: Spacing.sm,
   },
   palette: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginBottom: Spacing.lg },
+  iconCircle: {
+    width: 36, height: 36, borderRadius: Radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.surfaceAlt, borderWidth: 2, borderColor: 'transparent',
+  },
+  iconSymbol: { fontSize: 18, lineHeight: 22, includeFontPadding: false },
   colorCircle: { width: 32, height: 32, borderRadius: 16 },
   colorCircleActive: { borderWidth: 3, borderColor: Colors.textPrimary },
   sheetButtons: { flexDirection: 'row', gap: Spacing.sm },

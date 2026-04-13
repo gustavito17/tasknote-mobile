@@ -5,6 +5,7 @@ export interface UserCategory {
   id: string;
   label: string;
   color: string;
+  icon?: string;
 }
 
 const STORAGE_KEYS = {
