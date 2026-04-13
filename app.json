@@ -43,7 +43,11 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.guspad"
+      "bundleIdentifier": "com.anonymous.guspad",
+      "icon": "./assets/gplogo.png"
+    },
+    "web": {
+      "favicon": "./assets/gplogo.png"
     },
     "scheme": "guspad"
   }
