@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types';
 import { authApi, apiClient } from '../api';
 import { signInWithGoogle } from '../api/supabase';
@@ -135,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: '' });
-      throw error;
+      Alert.alert('Error con Google', error?.message ?? 'No se pudo iniciar sesión con Google');
     }
   }, []);
 

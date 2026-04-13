@@ -4,6 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
+import * as WebBrowser from 'expo-web-browser';
+
+// Required for OAuth redirect handling on Android/iOS
+WebBrowser.maybeCompleteAuthSession();
 import {
   LeagueSpartan_400Regular,
   LeagueSpartan_600SemiBold,

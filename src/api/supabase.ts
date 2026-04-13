@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 
-// Completes the OAuth session when the app resumes
-WebBrowser.maybeCompleteAuthSession();
-
 const SUPABASE_URL = 'https://ugfhasfzskjqnxrinpcu.supabase.co';
 // Anon (public) key — safe to expose in mobile apps
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmhhc2Z6c2tqcW54cmducGN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2MzIxMTQsImV4cCI6MjA1OTIwODExNH0.OsL5nRPfjFUHVsFAFAeNQ7lNUPxfzXJK2dqNAGVrm10';
@@ -35,19 +32,32 @@ export async function signInWithGoogle(): Promise<string> {
     throw new Error(error?.message ?? 'No se pudo iniciar Google OAuth');
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+  // Timeout de 2 minutos para que no quede cargando infinito
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Tiempo de espera agotado. Intentá de nuevo.')), 120000)
+  );
 
-  if (result.type !== 'success' || !result.url) {
+  const browserPromise = WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+  const result = await Promise.race([browserPromise, timeoutPromise]) as WebBrowser.WebBrowserAuthSessionResult;
+
+  if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Inicio de sesión cancelado');
   }
 
-  // Extract access_token from the callback URL fragment
+  if (result.type !== 'success' || !result.url) {
+    throw new Error(`Error en autenticación (tipo: ${result.type})`);
+  }
+
+  // Extraer access_token del fragment o query string del callback
   const url = result.url;
-  const params = new URLSearchParams(url.split('#')[1] ?? url.split('?')[1] ?? '');
+  console.log('[Google OAuth] Callback URL:', url);
+  const fragment = url.split('#')[1] ?? '';
+  const query = url.split('?')[1]?.split('#')[0] ?? '';
+  const params = new URLSearchParams(fragment || query);
   const accessToken = params.get('access_token');
 
   if (!accessToken) {
-    throw new Error('No se recibió token de Google');
+    throw new Error(`No se recibió token. URL recibida: ${url.substring(0, 100)}`);
   }
 
   return accessToken;

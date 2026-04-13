@@ -4,8 +4,9 @@ import Constants from 'expo-constants';
 
 const STORAGE_TOKEN_KEY = 'TaskNote.authToken';
 
-const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || 
-  process.env.EXPO_PUBLIC_API_URL || 
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  Constants.expoConfig?.extra?.apiUrl ||
   'https://tasknote-api.onrender.com/api';
 
 class ApiClient {
