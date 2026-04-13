@@ -8,6 +8,7 @@
     "icon": "./assets/gplogo.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/gplogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#0C2729"
     },
