@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/gplogo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
@@ -27,7 +27,7 @@
       }
     },
     "android": {
-      "package": "com.anonymous.tasknotemobile",
+      "package": "com.anonymous.guspad",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -38,7 +38,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.tasknotemobile"
+      "bundleIdentifier": "com.anonymous.guspad"
     },
     "scheme": "guspad"
   }
