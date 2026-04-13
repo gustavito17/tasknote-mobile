@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { Button } from '../components';
 import { Input } from '../components';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
@@ -34,7 +34,7 @@ export function LoginScreen({ onLogin, onLoginWithGoogle, onNavigateToRegister, 
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Text style={styles.logoText}>G</Text>
+              <Image source={require('../../assets/gplogo.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
             <Text style={styles.title}>GusPad</Text>
             <Text style={styles.subtitle}>Gestiona tus tareas y notas</Text>
@@ -110,13 +110,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   logoContainer: {
-    width: 72,
-    height: 72,
+    width: 88,
+    height: 88,
     borderRadius: Radius.lg,
     backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 88,
+    height: 88,
   },
   logoText: {
     fontSize: 38,
