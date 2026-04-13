@@ -8,6 +8,7 @@ import { Button } from '../components';
 import { useTasks } from '../context';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 import storage from '../storage';
+import { scheduleTaskNotification } from '../notifications';
 
 type CreateTaskScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -104,6 +105,7 @@ export function CreateTaskScreen({ navigation, route }: CreateTaskScreenProps) {
       const fullDescription = (dateLine + description.trim()) || undefined;
       const task = await createTask({ title: title.trim(), description: fullDescription });
       if (categoryId) await storage.setTaskCategory(task.id, categoryId);
+      if (scheduledDate) await scheduleTaskNotification(task.id, title.trim(), scheduledDate);
       navigation.goBack();
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Error al crear la tarea');

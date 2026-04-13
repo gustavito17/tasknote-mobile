@@ -17,10 +17,15 @@ import { AuthProvider, TaskProvider, NoteProvider, NetworkProvider } from './con
 import { AppNavigator } from './navigation';
 import { Colors } from './theme';
 import { apiClient } from './api';
+import { requestNotificationPermissions, scheduleDailyReminder } from './notifications';
 
 export default function App() {
   useEffect(() => {
     apiClient.warmUp();
+    // Pedir permisos y programar recordatorio diario a las 9 AM
+    requestNotificationPermissions().then((granted) => {
+      if (granted) scheduleDailyReminder(9, 0);
+    });
   }, []);
 
   const [fontsLoaded] = useFonts({

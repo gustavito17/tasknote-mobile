@@ -19,7 +19,15 @@
       "expo-secure-store",
       "expo-asset",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/gplogo.png",
+          "color": "#0C2729",
+          "sounds": []
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://tasknote-api.onrender.com/api",

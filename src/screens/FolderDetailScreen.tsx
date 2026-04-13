@@ -11,6 +11,7 @@ import { useTasks } from '../context';
 import { Task } from '../types';
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '../theme';
 import storage from '../storage';
+import { cancelTaskNotification } from '../notifications';
 
 type FolderDetailProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -39,12 +40,15 @@ export function FolderDetailScreen({ navigation, route }: FolderDetailProps) {
   }, [fetchTasks, loadData]);
 
   const handleToggle = useCallback((task: Task) => {
-    updateTaskStatus(task.id, task.status === 'pending' ? 'completed' : 'pending');
+    const next = task.status === 'pending' ? 'completed' : 'pending';
+    updateTaskStatus(task.id, next);
+    if (next === 'completed') cancelTaskNotification(task.id);
   }, [updateTaskStatus]);
 
   const handleDelete = useCallback(async (task: Task) => {
     await deleteTask(task.id);
     await storage.setTaskCategory(task.id, null);
+    await cancelTaskNotification(task.id);
   }, [deleteTask]);
 
   const folderTasks = tasks.filter((t) =>
