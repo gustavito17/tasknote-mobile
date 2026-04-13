@@ -20,7 +20,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export async function signInWithGoogle(): Promise<string> {
   const redirectUrl = 'guspad://auth/callback';
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const { data, error: initError } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: redirectUrl,
@@ -28,8 +28,8 @@ export async function signInWithGoogle(): Promise<string> {
     },
   });
 
-  if (error || !data?.url) {
-    throw new Error(error?.message ?? 'No se pudo iniciar Google OAuth');
+  if (initError || !data?.url) {
+    throw new Error(initError?.message ?? 'No se pudo iniciar Google OAuth');
   }
 
   // Timeout de 2 minutos para que no quede cargando infinito
@@ -48,16 +48,25 @@ export async function signInWithGoogle(): Promise<string> {
     throw new Error(`Error en autenticación (tipo: ${result.type})`);
   }
 
-  // Extraer access_token del fragment o query string del callback
-  const url = result.url;
-  console.log('[Google OAuth] Callback URL:', url);
-  const fragment = url.split('#')[1] ?? '';
-  const query = url.split('?')[1]?.split('#')[0] ?? '';
-  const params = new URLSearchParams(fragment || query);
-  const accessToken = params.get('access_token');
+  const callbackUrl = result.url;
+  console.log('[Google OAuth] Callback URL:', callbackUrl);
+
+  const fragment = callbackUrl.split('#')[1] ?? '';
+  const query = callbackUrl.split('?')[1]?.split('#')[0] ?? '';
+  const fragmentParams = new URLSearchParams(fragment);
+  const queryParams = new URLSearchParams(query);
+
+  // Detectar error de Supabase/Google antes de buscar el token
+  const callbackError = fragmentParams.get('error') ?? queryParams.get('error');
+  const callbackErrorDesc = fragmentParams.get('error_description') ?? queryParams.get('error_description');
+  if (callbackError) {
+    throw new Error(callbackErrorDesc ? decodeURIComponent(callbackErrorDesc) : `Error OAuth: ${callbackError}`);
+  }
+
+  const accessToken = fragmentParams.get('access_token') ?? queryParams.get('access_token');
 
   if (!accessToken) {
-    throw new Error(`No se recibió token. URL recibida: ${url.substring(0, 100)}`);
+    throw new Error('No se recibió token de acceso');
   }
 
   return accessToken;
